@@ -10,10 +10,9 @@ import Foundation
 
 /// Operacje na transkrypcji bazujące na słowniku użytkownika (`VocabularyStore`).
 ///
-/// Trzy operacje:
+/// Dwie operacje:
 /// 1. `generateInitialPrompt()` - łączy Custom Words w string dla Whisper `initialPrompt`
 /// 2. `applyFindReplace()` - aplikuje sekwencyjnie reguły zamiany do tekstu
-/// 3. `generateAIVocabularySection()` - wstrzykuje listę terminów do system promptu LLM
 ///
 /// **Bezstanowy** - czyta z `VocabularyStore.shared` przy każdej operacji.
 @MainActor
@@ -110,24 +109,4 @@ enum VocabularyProcessor {
         }
     }
 
-    // MARK: - AI Vocabulary (dla LLM system prompt)
-
-    /// Generuje sekcję do wstrzyknięcia w system prompt LLM.
-    /// Zwraca pusty string jeśli brak terminów (caller pomija sekcję).
-    ///
-    /// Format:
-    /// ```
-    /// Słownik użytkownika: oto lista nazw własnych i terminów, które mogą pojawić się
-    /// w tekście. Zachowaj ich pisownię dokładnie tak: Anthropic, Claude Code, Werner, ...
-    /// ```
-    static func generateAIVocabularySection() -> String {
-        let terms = VocabularyStore.shared.aiVocabularyTerms.map { $0.term }
-        guard !terms.isEmpty else { return "" }
-
-        let list = terms.joined(separator: ", ")
-        return """
-            Słownik użytkownika: oto lista nazw własnych i terminów, które mogą \
-            pojawić się w tekście. Zachowaj ich pisownię dokładnie tak: \(list).
-            """
-    }
 }

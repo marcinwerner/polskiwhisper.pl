@@ -10,15 +10,16 @@ import Foundation
 import GRDB
 import Observation
 
-/// Persistencja słownika użytkownika w SQLite (GRDB).
+/// Persystencja słownika użytkownika w SQLite (GRDB).
 ///
-/// Trzy warstwy słownika (zgodnie z ADR i INITIAL_PROMPT):
+/// Dwie warstwy słownika:
 /// 1. **Custom Words** - lista słów wstrzykiwanych do Whisper jako `initialPrompt`,
 ///    żeby model preferował te terminy w transkrypcji (np. "Anthropic", "Claude Code")
 /// 2. **Find & Replace** - reguły zamiany aplikowane do tekstu PO transkrypcji
 ///    (text lub regex), np. "klałd kod" → "Claude Code"
-/// 3. **AI Vocabulary** - terminy wstrzykiwane do system promptu LLM (Bielik), aby zachować
-///    ich pisownię podczas post-processingu
+///
+/// (Trzecia warstwa **AI Vocabulary** została usunięta w v0.1.1 razem z LLM/Ollama
+/// integracją - była używana tylko dla LLM system promptu który zniknął.)
 ///
 /// Lokalizacja: `~/Library/Application Support/PolskiWhisper/vocabulary.db`
 @MainActor
@@ -44,18 +45,10 @@ final class VocabularyStore {
         var createdAt: Date
     }
 
-    struct AIVocabularyTerm: Identifiable, Codable, Equatable, Hashable {
-        var id: Int64?
-        var term: String
-        var notes: String?
-        var createdAt: Date
-    }
-
     // MARK: - State (observable)
 
     private(set) var customWords: [CustomWord] = []
     private(set) var findReplaceRules: [FindReplaceRule] = []
-    private(set) var aiVocabularyTerms: [AIVocabularyTerm] = []
 
     // MARK: - Private
 
@@ -84,8 +77,7 @@ final class VocabularyStore {
         try reload()
         Log.storage.info("""
             Vocabulary loaded: \(self.customWords.count, privacy: .public) custom words, \
-            \(self.findReplaceRules.count, privacy: .public) find&replace rules, \
-            \(self.aiVocabularyTerms.count, privacy: .public) AI vocab terms
+            \(self.findReplaceRules.count, privacy: .public) find&replace rules
             """)
     }
 
@@ -118,6 +110,13 @@ final class VocabularyStore {
             }
         }
 
+        // v2: drop ai_vocabulary_term - LLM/Ollama integracja usunięta w v0.1.1,
+        // tabela jest dead data. Aktualnie nikt nie ma realnych userów (pre-v0.1.1
+        // userzy mieli LLM OFF default), więc bezpieczne drop.
+        migrator.registerMigration("v2_drop_ai_vocabulary") { db in
+            try db.drop(table: "ai_vocabulary_term")
+        }
+
         return migrator
     }
 
@@ -128,7 +127,6 @@ final class VocabularyStore {
         try dbQueue.read { db in
             customWords = try CustomWord.fetchAll(db, sql: "SELECT * FROM custom_word ORDER BY word ASC")
             findReplaceRules = try FindReplaceRule.fetchAll(db, sql: "SELECT * FROM find_replace_rule ORDER BY orderIndex ASC, id ASC")
-            aiVocabularyTerms = try AIVocabularyTerm.fetchAll(db, sql: "SELECT * FROM ai_vocabulary_term ORDER BY term ASC")
         }
     }
 
@@ -185,39 +183,16 @@ final class VocabularyStore {
         try reload()
     }
 
-    // MARK: - AI Vocabulary
-
-    func addAIVocabularyTerm(_ term: String, notes: String? = nil) throws {
-        let trimmed = term.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        try dbQueue.write { db in
-            try db.execute(
-                sql: "INSERT INTO ai_vocabulary_term (term, notes, createdAt) VALUES (?, ?, ?)",
-                arguments: [trimmed, notes, Date()]
-            )
-        }
-        try reload()
-        Log.vocabulary.info("Added AI vocab term (\(trimmed.count, privacy: .public) chars)")
-    }
-
-    func deleteAIVocabularyTerm(id: Int64) throws {
-        try dbQueue.write { db in
-            try db.execute(sql: "DELETE FROM ai_vocabulary_term WHERE id = ?", arguments: [id])
-        }
-        try reload()
-    }
-
     // MARK: - Eksport / Import (backup + sync między urządzeniami)
 
-    /// Eksport całego słownika do JSON.
-    /// Format: { customWords: [...], findReplaceRules: [...], aiVocabularyTerms: [...] }
+    /// Eksport słownika do JSON.
+    /// Format: { customWords: [...], findReplaceRules: [...] }
     func exportToJSON() throws -> Data {
         let snapshot = VocabularySnapshot(
-            version: 1,
+            version: 2,
             exportedAt: Date(),
             customWords: customWords,
-            findReplaceRules: findReplaceRules,
-            aiVocabularyTerms: aiVocabularyTerms
+            findReplaceRules: findReplaceRules
         )
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -227,6 +202,7 @@ final class VocabularyStore {
 
     /// Import z JSON. Tryb append - **dodaje** do istniejącego słownika.
     /// Jeśli `replace == true` - czyści tabele przed importem.
+    /// Wsparcie dla v1 (zawiera `aiVocabularyTerms` - ignorowane) i v2.
     func importFromJSON(_ data: Data, replace: Bool = false) throws {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
@@ -236,7 +212,6 @@ final class VocabularyStore {
             if replace {
                 try db.execute(sql: "DELETE FROM custom_word")
                 try db.execute(sql: "DELETE FROM find_replace_rule")
-                try db.execute(sql: "DELETE FROM ai_vocabulary_term")
             }
 
             for word in snapshot.customWords {
@@ -254,18 +229,11 @@ final class VocabularyStore {
                     arguments: [rule.findText, rule.replaceWith, rule.isRegex, rule.caseSensitive, rule.orderIndex, rule.createdAt]
                 )
             }
-            for term in snapshot.aiVocabularyTerms {
-                try db.execute(
-                    sql: "INSERT INTO ai_vocabulary_term (term, notes, createdAt) VALUES (?, ?, ?)",
-                    arguments: [term.term, term.notes, term.createdAt]
-                )
-            }
         }
         try reload()
         Log.vocabulary.info("""
             Imported: \(snapshot.customWords.count, privacy: .public) words, \
-            \(snapshot.findReplaceRules.count, privacy: .public) rules, \
-            \(snapshot.aiVocabularyTerms.count, privacy: .public) AI terms (replace=\(replace, privacy: .public))
+            \(snapshot.findReplaceRules.count, privacy: .public) rules (replace=\(replace, privacy: .public))
             """)
     }
 
@@ -301,7 +269,13 @@ private struct VocabularySnapshot: Codable {
     let exportedAt: Date
     let customWords: [VocabularyStore.CustomWord]
     let findReplaceRules: [VocabularyStore.FindReplaceRule]
-    let aiVocabularyTerms: [VocabularyStore.AIVocabularyTerm]
+
+    /// Backward-compatible decoder dla v1 plików które miały `aiVocabularyTerms`.
+    /// V1 import: pole jest opcjonalne i ignorowane, customWords + findReplaceRules
+    /// importowane normalnie.
+    enum CodingKeys: String, CodingKey {
+        case version, exportedAt, customWords, findReplaceRules
+    }
 }
 
 // MARK: - GRDB protocol conformances
@@ -312,8 +286,4 @@ extension VocabularyStore.CustomWord: FetchableRecord, MutablePersistableRecord 
 
 extension VocabularyStore.FindReplaceRule: FetchableRecord, MutablePersistableRecord {
     static var databaseTableName: String { "find_replace_rule" }
-}
-
-extension VocabularyStore.AIVocabularyTerm: FetchableRecord, MutablePersistableRecord {
-    static var databaseTableName: String { "ai_vocabulary_term" }
 }

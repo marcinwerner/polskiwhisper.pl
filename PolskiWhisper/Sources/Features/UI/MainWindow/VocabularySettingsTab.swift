@@ -20,7 +20,6 @@ struct VocabularySettingsTab: View {
     enum Section: String, CaseIterable, Identifiable {
         case customWords = "Słowa własne"
         case findReplace = "Znajdź i zamień"
-        case aiVocab = "Słownik AI"
 
         var id: String { rawValue }
 
@@ -30,8 +29,6 @@ struct VocabularySettingsTab: View {
                 return "Słowa wstrzykiwane do Whisper jako kontekst (lepsze rozpoznawanie nazw własnych)."
             case .findReplace:
                 return "Reguły zamiany aplikowane do tekstu po transkrypcji."
-            case .aiVocab:
-                return "Terminy do promptu modelu AI - zachowuje pisownię nazw własnych podczas oczyszczania."
             }
         }
     }
@@ -59,8 +56,6 @@ struct VocabularySettingsTab: View {
                 CustomWordsView()
             case .findReplace:
                 FindReplaceView()
-            case .aiVocab:
-                AIVocabularyView()
             }
 
             Divider()
@@ -317,60 +312,3 @@ private struct FindReplaceView: View {
     }
 }
 
-// MARK: - AI Vocabulary
-
-private struct AIVocabularyView: View {
-    @State private var store = VocabularyStore.shared
-    @State private var newTerm: String = ""
-
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                TextField("Termin (np. Marcin Werner, MRCS, polskiwhisper.pl)", text: $newTerm)
-                    .textFieldStyle(.roundedBorder)
-                    .onSubmit { add() }
-                Button("Dodaj", action: add)
-                    .keyboardShortcut(.return)
-                    .disabled(newTerm.trimmingCharacters(in: .whitespaces).isEmpty)
-            }
-            .padding()
-
-            List {
-                ForEach(store.aiVocabularyTerms) { term in
-                    HStack {
-                        Text(term.term)
-                        Spacer()
-                        Button {
-                            delete(id: term.id)
-                        } label: {
-                            Image(systemName: "trash")
-                                .foregroundStyle(.red)
-                        }
-                        .buttonStyle(.borderless)
-                    }
-                }
-            }
-
-            HStack {
-                Text("\(store.aiVocabularyTerms.count) terminów")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-            }
-            .padding(.horizontal)
-            .padding(.bottom, 8)
-        }
-    }
-
-    private func add() {
-        let trimmed = newTerm.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return }
-        try? store.addAIVocabularyTerm(trimmed)
-        newTerm = ""
-    }
-
-    private func delete(id: Int64?) {
-        guard let id else { return }
-        try? store.deleteAIVocabularyTerm(id: id)
-    }
-}
