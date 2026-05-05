@@ -4,7 +4,8 @@ Format zgodny z [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) + [Sema
 
 ## [0.1.1] - 2026-05-05
 
-Release naprawowy - poprawki bezpieczeństwa, jakości życia i uproszczenie aplikacji.
+Release naprawowy + nowe features dla update flow. Poprawki bezpieczeństwa,
+jakości UX, uproszczenie aplikacji.
 
 ### Naprawione
 
@@ -12,9 +13,39 @@ Release naprawowy - poprawki bezpieczeństwa, jakości życia i uproszczenie apl
   typu "Dziękuję za oglądanie" / "Subskrybujcie" (Whisper trenowany na YouTube
   outros). Teraz przed transkrypcją sprawdzamy maksymalny RMS audio - jeśli było
   cicho, nie wywołujemy Whispera w ogóle. Cisza = nic się nie wkleja.
-- **Klik w ikonę w Docku** otwiera teraz Ustawienia (wcześniej nic się nie działo)
+- **Bug "Już trwa nagrywanie"** - state desynchronization między audio engine
+  a fazą aplikacji prowadziło do stuck state gdzie tap dawał błąd zamiast
+  zatrzymać nagrywanie (user musiał force-quit). Defense in depth na 3 poziomach
+  (isDictating, startDictation recovery, AudioRecorder self-healing).
+- **Pasek pobierania zatrzymywał się na 90%** - WhisperKit init nie ma progress
+  callback, więc po download (0-90%) load do RAM (5-30s) wyglądał jak zawieszenie.
+  Teraz UI rozróżnia 2 fazy: download (rzeczywisty pasek 0-100% z procentem)
+  vs loadingToRAM (indeterminate spinner z komunikatem "Ładowanie do pamięci").
+- **Klik w ikonę w Docku** otwiera teraz ZAWSZE Ustawienia, niezależnie od stanu
+  okna (zminimalizowane, na innym desktopie, w tle - wszędzie deminiaturize +
+  bring to front)
 - **Filter halucynacji odporny na warianty bez polskich znaków** - "Dziekuje za
-  ogladanie" jest łapane tak samo jak "Dziękuję za oglądanie"
+  ogladanie" / "Subskrybujcie kanal" są łapane tak samo jak wersje z ogonkami.
+  Plus poprawiona obsługa "ł" (Unicode U+0142, nie diakrytyk) przez manual fold
+
+### Dodane
+
+- **Domyślny model: Whisper Turbo 1.5 GB** zamiast 547 MB - znacząco lepsza
+  jakość rozpoznawania polskiego. Aktualni userzy z UserDefaults zostają na
+  swoim wyborze (manual change w Settings → Whisper).
+- **Cleanup poprzedniego modelu** - przy zmianie modelu w Settings, jeśli
+  poprzedni jest na dysku, dialog: "Usunąć poprzedni model X (Y MB)?"
+  oszczędność miejsca (do ~3 GB dla Large v3)
+- **In-app update checker** - aplikacja sprawdza GitHub Releases API raz na
+  24h. Jeśli dostępna nowa wersja: banner w Settings → Ogólne + badge w menu
+  bar dropdown. Tylko publiczny GitHub API, brak personal data, brak telemetrii.
+- **Self-update detection** - aplikacja wykrywa gdy user podmieni .app w
+  /Applications/ (pobierze DMG i przeciągnie). Sprawdza mtime co 60s. Pierwsza
+  detekcja: modal alert "Restart aplikacji"/"Później". Po "Później": badge
+  w menu bar z button "Restart aplikacji" (relaunch + terminate)
+- **Circular progress ring** wokół ikony pobierania w floating window - user
+  widzi konkretny progress 0-100% wokół ikony (orange ring), a podczas load
+  do RAM widzi spinner z ikoną pamięci
 
 ### Bezpieczeństwo / prywatność
 
@@ -38,8 +69,9 @@ Release naprawowy - poprawki bezpieczeństwa, jakości życia i uproszczenie apl
 
 ### Zmienione
 
-- README zawiera obraz hero + opis bez wzmianek o LLM
+- README zawiera obraz hero + opis bez wzmianek o LLM, dokładne liczby modeli
 - Pipeline transkrypcji: 3 kroki (Whisper → Vocabulary → Paste) zamiast 4
+- Wymagania dyskowe w README: ~1.5 GB dla domyślnego modelu (do 3 GB dla Large v3)
 
 ## [0.1.0] - 2026-05-05
 
