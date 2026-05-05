@@ -32,9 +32,15 @@ final class DictationEngine {
     // MARK: - State
 
     /// Czy aktualnie trwa dyktowanie (recording lub processing).
+    ///
+    /// Source of truth: `audioRecorder.isRecording` dla fazy recording (faktyczny stan).
+    /// Phase to fallback dla post-record fazy (Whisper transcribing, paste).
+    /// Wcześniej tylko phase - prowadziło do desync gdy phase rozjedzie się z audio engine
+    /// (bug "Już trwa nagrywanie" zaobserwowany w produkcji).
     var isDictating: Bool {
+        if audioRecorder.isRecording { return true }
         switch AppCoordinator.shared.phase {
-        case .recording, .processingWhisper, .pasting:
+        case .processingWhisper, .pasting:
             return true
         default:
             return false
@@ -103,8 +109,17 @@ final class DictationEngine {
     /// Wymaga że model JEST gotowy (preloaded przy starcie aplikacji).
     /// Jeśli model nie gotowy (np. wciąż się pobiera) - hotkey jest ignorowany.
     func startDictation() async {
+        // Defensive recovery: jeśli audioRecorder ma stale isRecording=true (z poprzedniego
+        // nieukończonego nagrania, np. crash w pipeline), force stop + reset stanu.
+        // To naprawia bug "Już trwa nagrywanie" gdzie tap wynikał w error zamiast start.
+        if audioRecorder.isRecording {
+            Log.dictation.warning("Stale isRecording=true detected - force stop + reset before fresh start")
+            _ = audioRecorder.stopRecording()
+            AppCoordinator.shared.phase = .idle
+        }
+
         guard !isDictating else {
-            Log.dictation.warning("startDictation called but already dictating")
+            Log.dictation.warning("startDictation called but already dictating (phase=\(String(describing: AppCoordinator.shared.phase), privacy: .public))")
             return
         }
 

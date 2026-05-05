@@ -112,10 +112,29 @@ final class AudioRecorder {
     // MARK: - Public API
 
     /// Rozpoczyna nagrywanie. Zwraca URL pliku WAV gdzie zapisywane jest audio.
+    ///
+    /// Self-healing: jeśli `isRecording=true` (stale state z crashed previous recording),
+    /// force cleanup zamiast throwing error. To była przyczyna user-facing buga
+    /// "Już trwa nagrywanie" - DictationEngine już ma swoje recovery, tu defense in depth.
     @discardableResult
     func startRecording() throws -> URL {
-        guard !isRecording else {
-            throw AudioError.alreadyRecording
+        if isRecording {
+            Log.audio.warning("startRecording called with stale isRecording=true - force cleanup")
+            engine.inputNode.removeTap(onBus: 0)
+            engine.stop()
+            elapsedTimer?.invalidate()
+            elapsedTimer = nil
+            maxDurationTimer?.invalidate()
+            maxDurationTimer = nil
+            audioFile = nil
+            audioConverter = nil
+            converterOutputFormat = nil
+            isRecording = false
+            currentLevel = 0
+            recentPeaks = []
+            recordingStartedAt = nil
+            currentRecordingURL = nil
+            // Po cleanup kontynuujemy normalny start
         }
 
         Log.audio.info("Starting recording")
