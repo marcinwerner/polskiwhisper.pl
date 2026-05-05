@@ -192,9 +192,6 @@ struct FloatingDictationContent: View {
         case .processingWhisper:
             Image(systemName: "waveform")
                 .symbolEffect(.variableColor, options: .repeating)
-        case .processingLLM:
-            Image(systemName: "sparkles")
-                .symbolEffect(.variableColor, options: .repeating)
         case .pasting:
             Image(systemName: "doc.on.clipboard")
         case .completed:
@@ -209,7 +206,7 @@ struct FloatingDictationContent: View {
         case .idle: return .secondary
         case .loadingModel: return .orange
         case .recording: return .red
-        case .processingWhisper, .processingLLM: return .blue
+        case .processingWhisper: return .blue
         case .pasting: return .green
         case .completed: return .green
         case .error: return .red
@@ -224,8 +221,6 @@ struct FloatingDictationContent: View {
             return formatTime(elapsedSeconds)
         case .processingWhisper:
             return "Tekst"
-        case .processingLLM:
-            return "Polerowanie"
         case .pasting:
             return "..."
         case .completed:

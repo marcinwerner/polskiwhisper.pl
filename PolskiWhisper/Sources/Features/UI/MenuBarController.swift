@@ -16,7 +16,7 @@ import SwiftUI
 /// Stany ikony:
 /// - **idle**: zwykła ikona mikrofonu
 /// - **recording**: czerwona kropka (animowana w przyszłości)
-/// - **processing**: ikona "kropki..." (Whisper lub LLM cleanup)
+/// - **processing**: ikona "kropki..." (Whisper transkrypcja)
 ///
 /// Menu (right-click lub click):
 /// - Status (np. "Gotowy do dyktowania")
@@ -161,9 +161,6 @@ final class MenuBarController {
         case .processingWhisper:
             button.image = symbolImage(named: "waveform")
             updateStatusItemText("Transkrypcja...")
-        case .processingLLM:
-            button.image = symbolImage(named: "sparkles")
-            updateStatusItemText("Polerowanie tekstu...")
         case .pasting:
             button.image = symbolImage(named: "doc.on.clipboard")
             updateStatusItemText("Wklejanie...")

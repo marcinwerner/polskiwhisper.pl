@@ -13,7 +13,6 @@ import SwiftUI
 /// Zakładki (TabView):
 /// - **Ogólne** - autostart, motyw, dźwięki
 /// - **Whisper** - wybór modelu, język
-/// - **LLM** - włącz/wyłącz post-processing, wybór modelu Ollama, system prompt
 /// - **Słownictwo** - Custom Words, Find & Replace, AI Vocabulary
 /// - **O programie** - wersja, licencje
 struct SettingsView: View {
@@ -28,11 +27,6 @@ struct SettingsView: View {
             WhisperSettingsTab()
                 .tabItem {
                     Label("Whisper", systemImage: "waveform")
-                }
-
-            LLMSettingsTab()
-                .tabItem {
-                    Label("Model AI", systemImage: "sparkles")
                 }
 
             VocabularySettingsTab()

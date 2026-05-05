@@ -51,11 +51,8 @@ struct AboutTab: View {
                     VStack(alignment: .leading, spacing: 6) {
                         ackLink("WhisperKit (Apache 2.0)", url: "https://github.com/argmaxinc/WhisperKit")
                         ackLink("OpenAI Whisper (MIT)", url: "https://github.com/openai/whisper")
-                        ackLink("Bielik 11B (Apache 2.0)", url: "https://huggingface.co/speakleash/Bielik-11B-v2.3-Instruct")
-                        ackLink("KeyboardShortcuts (MIT)", url: "https://github.com/sindresorhus/KeyboardShortcuts")
                         ackLink("LaunchAtLogin-Modern (MIT)", url: "https://github.com/sindresorhus/LaunchAtLogin-Modern")
                         ackLink("GRDB.swift (MIT)", url: "https://github.com/groue/GRDB.swift")
-                        ackLink("Ollama (MIT)", url: "https://github.com/ollama/ollama")
                     }
                     .font(.callout)
                 }

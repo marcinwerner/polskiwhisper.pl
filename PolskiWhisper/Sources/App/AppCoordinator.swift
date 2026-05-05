@@ -34,7 +34,6 @@ final class AppCoordinator {
         case loadingModel
         case recording(startedAt: Date)
         case processingWhisper
-        case processingLLM
         case pasting
         case completed(transcriptLength: Int)
         case error(message: String)
@@ -178,9 +177,6 @@ final class AppCoordinator {
     enum Keys {
         static let onboardingCompleted = "onboardingCompleted"
         static let selectedWhisperModel = "selectedWhisperModel"
-        static let llmEnabled = "llmEnabled"
-        static let selectedLLMModel = "selectedLLMModel"
-        static let llmSystemPrompt = "llmSystemPrompt"
         static let hotkeyMode = "hotkeyMode" // "toggle" | "hold"
         static let selectedHotkey = "selectedHotkey"
         static let autoPaste = "autoPaste"
@@ -271,28 +267,4 @@ final class AppCoordinator {
         }
     }
 
-    // MARK: - Settings (computed properties z UserDefaults)
-
-    /// Czy post-processing przez LLM jest włączony. **Default: false** (ADR - opt-in).
-    /// User świadomie włącza w Settings (Etap 3).
-    var llmEnabled: Bool {
-        get { UserDefaults.standard.bool(forKey: Keys.llmEnabled) }
-        set { UserDefaults.standard.set(newValue, forKey: Keys.llmEnabled) }
-    }
-
-    /// Wybrany model Ollama dla post-processingu.
-    /// Default: Bielik 11B Q4 (rekomendowany dla polskiego, wymaga 7+ GB RAM).
-    var selectedLLMModel: String {
-        get {
-            UserDefaults.standard.string(forKey: Keys.selectedLLMModel)
-                ?? "SpeakLeash/bielik-11b-v2.3-instruct:Q4_K_M"
-        }
-        set { UserDefaults.standard.set(newValue, forKey: Keys.selectedLLMModel) }
-    }
-
-    /// Custom system prompt dla LLM. Jeśli pusty - używamy default z `defaultLLMSystemPrompt`.
-    var customLLMSystemPrompt: String {
-        get { UserDefaults.standard.string(forKey: Keys.llmSystemPrompt) ?? "" }
-        set { UserDefaults.standard.set(newValue, forKey: Keys.llmSystemPrompt) }
-    }
 }
