@@ -122,11 +122,15 @@ Pełna dokumentacja:
 
 PolskiWhisper jest budowany na ramieniu olbrzymów. Zobacz [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md).
 
-## Wsparcie
+## Kontakt i wsparcie
 
-- 🐛 [GitHub Issues](https://github.com/marcinwerner/polskiwhisper.pl/issues) - bug reporty i feature requesty
-- 💬 [Dyskusje](https://github.com/marcinwerner/polskiwhisper.pl/discussions) - pytania, sugestie
-- 📧 **kontakt@marcinwerner.com** - inne tematy (komercyjne, kolaboracje, prasa)
+| Po co? | Gdzie iść |
+|---|---|
+| 🐛 Coś nie działa, bug | [GitHub Issues](https://github.com/marcinwerner/polskiwhisper.pl/issues) |
+| 💡 Pomysł na nową funkcję | [GitHub Issues](https://github.com/marcinwerner/polskiwhisper.pl/issues) |
+| ❓ Pytanie "jak coś zrobić" | [GitHub Discussions](https://github.com/marcinwerner/polskiwhisper.pl/discussions) |
+| 🔒 Luka bezpieczeństwa (prywatnie) | [Security Advisories](https://github.com/marcinwerner/polskiwhisper.pl/security/advisories/new) |
+| 📧 Inne (komercyjne, prasa, kolaboracje) | kontakt@marcinwerner.com |
 
 ## Filozofia projektu
 

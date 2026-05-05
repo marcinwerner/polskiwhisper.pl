@@ -66,16 +66,26 @@ struct AboutTab: View {
             Divider().padding(.horizontal, 80)
 
             // Akcje - linki zewnętrzne + onboarding
-            HStack(spacing: 10) {
-                Button("Repo na GitHub") {
-                    open("https://github.com/marcinwerner/polskiwhisper.pl")
+            VStack(spacing: 8) {
+                HStack(spacing: 8) {
+                    Button("Zgłoś błąd") {
+                        open("https://github.com/marcinwerner/polskiwhisper.pl/issues/new")
+                    }
+                    Button("Zadaj pytanie") {
+                        open("https://github.com/marcinwerner/polskiwhisper.pl/discussions")
+                    }
+                    Button("Repo na GitHub") {
+                        open("https://github.com/marcinwerner/polskiwhisper.pl")
+                    }
                 }
-                Button("Polityka prywatności") {
-                    open("https://github.com/marcinwerner/polskiwhisper.pl/blob/main/docs/PRIVACY.md")
-                }
-                Button("Pokaż onboarding ponownie") {
-                    AppCoordinator.shared.onboardingCompleted = false
-                    OnboardingFlow.shared.show()
+                HStack(spacing: 8) {
+                    Button("Polityka prywatności") {
+                        open("https://github.com/marcinwerner/polskiwhisper.pl/blob/main/docs/PRIVACY.md")
+                    }
+                    Button("Pokaż onboarding ponownie") {
+                        AppCoordinator.shared.onboardingCompleted = false
+                        OnboardingFlow.shared.show()
+                    }
                 }
             }
 
