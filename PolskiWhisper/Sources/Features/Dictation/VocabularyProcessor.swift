@@ -101,8 +101,9 @@ enum VocabularyProcessor {
                 withTemplate: rule.replaceWith
             )
         } catch {
+            // NIE loguj treści regex - może zawierać prywatne dane usera
             Log.vocabulary.error("""
-                Invalid regex in find&replace rule: '\(rule.findText, privacy: .public)' \
+                Invalid regex in find&replace rule (id=\(rule.id ?? -1, privacy: .public)) \
                 error: \(error.localizedDescription, privacy: .public)
                 """)
             return text  // skip broken rule

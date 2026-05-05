@@ -144,7 +144,8 @@ final class VocabularyStore {
             )
         }
         try reload()
-        Log.vocabulary.info("Added custom word: \(trimmed, privacy: .public)")
+        // Loguj tylko fakt - treść słownika prywatna
+        Log.vocabulary.info("Added custom word (\(trimmed.count, privacy: .public) chars)")
     }
 
     func deleteCustomWord(id: Int64) throws {
@@ -174,7 +175,7 @@ final class VocabularyStore {
             )
         }
         try reload()
-        Log.vocabulary.info("Added find&replace rule: '\(find, privacy: .public)' -> '\(replace, privacy: .public)'")
+        Log.vocabulary.info("Added find&replace rule (find=\(find.count, privacy: .public) chars, replace=\(replace.count, privacy: .public) chars, regex=\(isRegex, privacy: .public))")
     }
 
     func deleteFindReplaceRule(id: Int64) throws {
@@ -196,7 +197,7 @@ final class VocabularyStore {
             )
         }
         try reload()
-        Log.vocabulary.info("Added AI vocab term: \(trimmed, privacy: .public)")
+        Log.vocabulary.info("Added AI vocab term (\(trimmed.count, privacy: .public) chars)")
     }
 
     func deleteAIVocabularyTerm(id: Int64) throws {

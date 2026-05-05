@@ -235,9 +235,10 @@ final class WhisperService {
             // Filter halucynacji - Whisper często generuje YT outros gdy audio jest cichy
             let filtered = WhisperHallucinationFilter.filter(combinedText)
             if filtered != combinedText {
+                // Loguj tylko fakt + długości (NIE treść transkrypcji - prywatność)
                 Log.whisper.warning("""
-                    Filtered hallucination: '\(combinedText, privacy: .public)' \
-                    -> '\(filtered, privacy: .public)'
+                    Filtered hallucination: \(combinedText.count, privacy: .public) chars \
+                    -> \(filtered.count, privacy: .public) chars
                     """)
             }
 
