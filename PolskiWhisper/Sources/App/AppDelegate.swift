@@ -63,6 +63,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             OnboardingFlow.shared.show()
         }
 
+        // Update checker - sprawdź GitHub Releases. Delay 30s żeby nie obciążać startupu.
+        // Maksymalnie raz na 24h (UpdateChecker sam zarządza interwałem).
+        Task.detached(priority: .background) {
+            try? await Task.sleep(for: .seconds(30))
+            await UpdateChecker.shared.checkIfDue()
+        }
+
+        // Self-update detection - wykrywa gdy user podmieni .app w /Applications/.
+        // Sprawdza mtime executable co 60s.
+        SelfUpdateDetector.shared.startMonitoring()
+
         Log.app.info("PolskiWhisper launch sequence complete")
     }
 

@@ -58,8 +58,34 @@ struct GeneralSettingsTab: View {
         (0, "Bez limitu")
     ]
 
+    @State private var updateChecker = UpdateChecker.shared
+
     var body: some View {
         Form {
+            // Banner gdy dostępna nowa wersja
+            if let update = updateChecker.availableUpdate {
+                Section {
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: "arrow.down.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(.green)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Dostępna nowa wersja: PolskiWhisper v\(update.version)")
+                                .font(.headline)
+                            Text("Aktualnie używasz v\(Bundle.main.appVersion). Pobierz nowy DMG z GitHub.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button("Otwórz GitHub") {
+                            NSWorkspace.shared.open(update.releaseNotesURL)
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+
             Section("Uruchamianie") {
                 LaunchAtLogin.Toggle("Uruchamiaj przy logowaniu")
 

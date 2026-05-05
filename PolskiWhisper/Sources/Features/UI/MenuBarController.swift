@@ -69,6 +69,33 @@ final class MenuBarController {
 
         menu.addItem(NSMenuItem.separator())
 
+        // Update available - placeholder, populated dynamically w refresh()
+        let updateItem = NSMenuItem(
+            title: "",
+            action: #selector(openUpdatePage),
+            keyEquivalent: ""
+        )
+        updateItem.target = self
+        updateItem.tag = MenuItemTag.updateAvailable.rawValue
+        updateItem.isHidden = true  // domyślnie ukryty - pokazuje się gdy jest update
+        menu.addItem(updateItem)
+
+        // Restart required - placeholder dla self-update detection (e6)
+        let restartItem = NSMenuItem(
+            title: "",
+            action: #selector(restartApp),
+            keyEquivalent: ""
+        )
+        restartItem.target = self
+        restartItem.tag = MenuItemTag.restartRequired.rawValue
+        restartItem.isHidden = true
+        menu.addItem(restartItem)
+
+        let updateSeparator = NSMenuItem.separator()
+        updateSeparator.tag = MenuItemTag.updateSeparator.rawValue
+        updateSeparator.isHidden = true
+        menu.addItem(updateSeparator)
+
         // Otwórz Ustawienia
         let settingsItem = NSMenuItem(
             title: "Otwórz Ustawienia...",
@@ -107,6 +134,7 @@ final class MenuBarController {
     private func observePhase() {
         // AppCoordinator jest @Observable - używamy withObservationTracking dla manual observation
         observePhaseChange()
+        observeUpdateChange()
     }
 
     private func observePhaseChange() {
@@ -122,6 +150,22 @@ final class MenuBarController {
         }
         // Initial state
         updateForCurrentPhase()
+    }
+
+    /// Obserwuje UpdateChecker.availableUpdate i SelfUpdateDetector.restartRequired,
+    /// odświeża menu items gdy któryś się zmieni.
+    private func observeUpdateChange() {
+        withObservationTracking {
+            _ = UpdateChecker.shared.availableUpdate
+            _ = SelfUpdateDetector.shared.restartRequired
+        } onChange: {
+            Task { @MainActor [weak self] in
+                self?.refreshUpdateItems()
+                self?.observeUpdateChange()  // re-register
+            }
+        }
+        // Initial state
+        refreshUpdateItems()
     }
 
     /// Wymuś odświeżenie menu bar (np. po zmianie hotkey w Settings).
@@ -204,9 +248,54 @@ final class MenuBarController {
         NSApp.orderFrontStandardAboutPanel(nil)
     }
 
+    @objc private func openUpdatePage() {
+        guard let url = UpdateChecker.shared.availableUpdate?.releaseNotesURL else { return }
+        Log.menuBar.info("Opening update page from menu")
+        NSWorkspace.shared.open(url)
+    }
+
+    @objc private func restartApp() {
+        Log.menuBar.info("User clicked restart from menu - relaunching")
+        SelfUpdateDetector.shared.relaunchApp()
+    }
+
+    // MARK: - Update items observation
+
+    /// Wywoływane gdy zmieni się availableUpdate w UpdateChecker - pokazujemy/ukrywamy
+    /// menu item "Aktualizacja dostępna".
+    func refreshUpdateItems() {
+        guard let menu = statusItem.menu else { return }
+
+        let updateItem = menu.item(withTag: MenuItemTag.updateAvailable.rawValue)
+        let restartItem = menu.item(withTag: MenuItemTag.restartRequired.rawValue)
+        let separator = menu.item(withTag: MenuItemTag.updateSeparator.rawValue)
+
+        let availableUpdate = UpdateChecker.shared.availableUpdate
+        let restartNeeded = SelfUpdateDetector.shared.restartRequired
+
+        if let update = availableUpdate {
+            updateItem?.title = "🆕 Dostępna v\(update.version) - Otwórz GitHub"
+            updateItem?.isHidden = false
+        } else {
+            updateItem?.isHidden = true
+        }
+
+        if restartNeeded {
+            restartItem?.title = "🔄 Restart wymagany dla nowej wersji"
+            restartItem?.isHidden = false
+        } else {
+            restartItem?.isHidden = true
+        }
+
+        separator?.isHidden = (availableUpdate == nil && !restartNeeded)
+    }
+
     // MARK: - Tags
 
     private enum MenuItemTag: Int {
         case status = 100
+        case updateAvailable = 101
+        case restartRequired = 102
+        case updateSeparator = 103
     }
 }
