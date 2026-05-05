@@ -98,15 +98,21 @@ enum WhisperHallucinationFilter {
 
     // MARK: - Private helpers
 
+    /// Strip polskich znaków diakrytycznych. Standard `.stripDiacritics` zhandle
+    /// ą→a, ę→e, ć→c, ń→n, ó→o, ś→s, ź→z, ż→z, ALE NIE ł→l (bo `ł` to osobny
+    /// Unicode glyph U+0142, nie litera+diakrytyk). Dlatego manual replacement.
+    private static func foldPolish(_ text: String) -> String {
+        let stripped = text.applyingTransform(.stripDiacritics, reverse: false) ?? text
+        return stripped
+            .replacingOccurrences(of: "ł", with: "l")
+            .replacingOccurrences(of: "Ł", with: "L")
+    }
+
     /// Porównuje dwa stringi ignorując punktuację, case, whitespace **i polskie ogonki**.
     /// Diacritic-fold łapie warianty typu "Dziekuje za ogladanie" gdy Whisper zgubi polskie znaki.
     private static func textEqualsIgnoringPunctuation(_ a: String, _ b: String) -> Bool {
-        let normalized: (String) -> String = { text in
-            text.lowercased()
-                .applyingTransform(.stripDiacritics, reverse: false) ?? text.lowercased()
-        }
         let cleaned: (String) -> String = { text in
-            normalized(text)
+            foldPolish(text.lowercased())
                 .components(separatedBy: CharacterSet.alphanumerics.union(.whitespaces).inverted)
                 .joined()
                 .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -117,14 +123,11 @@ enum WhisperHallucinationFilter {
 
     /// Sprawdza czy text składa się WYŁĄCZNIE z halucynacji (np. "Dzięki za oglądanie. Bye bye.").
     /// Algorytm: po usunięciu wszystkich halucynacji nie zostaje nic znaczącego.
-    /// Strip diacritics przed porównaniem - łapie warianty bez polskich znaków.
+    /// Strip diacritics + ł przed porównaniem - łapie warianty bez polskich znaków.
     private static func isOnlyHallucinations(_ text: String) -> Bool {
-        let stripDiacritics: (String) -> String = { s in
-            s.applyingTransform(.stripDiacritics, reverse: false) ?? s
-        }
-        var stripped = stripDiacritics(text.lowercased())
+        var stripped = foldPolish(text.lowercased())
         for hallucination in knownHallucinations {
-            let folded = stripDiacritics(hallucination.lowercased())
+            let folded = foldPolish(hallucination.lowercased())
             stripped = stripped.replacingOccurrences(of: folded, with: "")
         }
         // Po usunięciu zostały tylko białe znaki + punktuacja?
