@@ -1,0 +1,115 @@
+# XcodeGen project specification
+# Generuj projekt Xcode komendą: xcodegen generate
+# Dokumentacja: https://github.com/yonaskolb/XcodeGen
+
+name: PolskiWhisper
+
+options:
+  bundleIdPrefix: pl.polskiwhisper
+  deploymentTarget:
+    macOS: "14.0"
+  developmentLanguage: pl
+  createIntermediateGroups: true
+  groupSortPosition: top
+  generateEmptyDirectories: true
+
+configs:
+  Debug: debug
+  Release: release
+
+settings:
+  base:
+    # UWAGA: SwiftPM wymaga "modern build locations" (DerivedData), więc nie używamy
+    # custom SYMROOT/OBJROOT. Konsekwencja: Xcode IDE buduje do
+    # ~/Library/Developer/Xcode/DerivedData/PolskiWhisper-<hash>/Build/Products/Debug/
+    # a `xcodebuild -derivedDataPath build/` buduje do build/Build/Products/Debug/
+    # Dla Accessibility permission: dodaj plik z **tej samej ścieżki** co używasz
+    # do testów. Przy testach przez Xcode IDE → DerivedData. Przy CI/scripts → build/.
+    SWIFT_VERSION: "5.9"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    SUPPORTED_PLATFORMS: macosx
+    ARCHS: arm64
+    ONLY_ACTIVE_ARCH: NO
+    PRODUCT_BUNDLE_IDENTIFIER: pl.polskiwhisper.app
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: "0.1.0"
+    ENABLE_HARDENED_RUNTIME: YES
+    # Self-signed cert "PolskiWhisper Self-Signed" - stable signature między buildami
+    # = TCC permissions (Accessibility, Mikrofon) NIE resetują się po rebuild.
+    # Cert utworzony w Pęku kluczy + zaufany dla Code Signing.
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "PolskiWhisper Self-Signed"
+    DEVELOPMENT_TEAM: ""
+    PROVISIONING_PROFILE_SPECIFIER: ""
+    GENERATE_INFOPLIST_FILE: NO
+    INFOPLIST_FILE: PolskiWhisper/Info.plist
+    CODE_SIGN_ENTITLEMENTS: PolskiWhisper/PolskiWhisper.entitlements
+    SWIFT_TREAT_WARNINGS_AS_ERRORS: NO
+    SWIFT_STRICT_CONCURRENCY: complete
+    DEAD_CODE_STRIPPING: YES
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+  configs:
+    Debug:
+      SWIFT_OPTIMIZATION_LEVEL: -Onone
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+      GCC_PREPROCESSOR_DEFINITIONS: DEBUG=1
+      ONLY_ACTIVE_ARCH: YES
+    Release:
+      SWIFT_OPTIMIZATION_LEVEL: -O
+      SWIFT_COMPILATION_MODE: wholemodule
+
+packages:
+  WhisperKit:
+    url: https://github.com/argmaxinc/WhisperKit
+    from: 0.7.0
+  KeyboardShortcuts:
+    url: https://github.com/sindresorhus/KeyboardShortcuts
+    from: 2.0.0
+  GRDB:
+    url: https://github.com/groue/GRDB.swift
+    from: 6.29.0
+  LaunchAtLogin:
+    url: https://github.com/sindresorhus/LaunchAtLogin-Modern
+    from: 1.0.0
+
+targets:
+  PolskiWhisper:
+    type: application
+    platform: macOS
+    sources:
+      - path: PolskiWhisper/Sources
+        excludes:
+          - "**/.gitkeep"
+      # Resources jako sources żeby xcodegen je faktycznie podłączył do build.
+      # Assets.xcassets compiluje do Assets.car (actool) - zawiera AppIcon
+      # widoczny w Docku, Cmd+Tab, Findera. Sounds dla przyszłych dźwięków
+      # w bundle (obecnie używamy systemowych przez NSSound).
+      - path: PolskiWhisper/Resources/Assets.xcassets
+      - path: PolskiWhisper/Resources/Sounds
+        optional: true
+      # Info.plist i entitlements są dodane jako "files" (referencja w projekcie)
+      # ale NIE jako "info:" / "entitlements:" (które powodowałyby regenerację).
+      # Lokalizacja i użycie kontrolowane przez build settings INFOPLIST_FILE
+      # i CODE_SIGN_ENTITLEMENTS w sekcji `settings` poniżej.
+      - path: PolskiWhisper/Info.plist
+        buildPhase: none
+      - path: PolskiWhisper/PolskiWhisper.entitlements
+        buildPhase: none
+    dependencies:
+      - package: WhisperKit
+        product: WhisperKit
+      - package: KeyboardShortcuts
+      - package: GRDB
+      - package: LaunchAtLogin
+    settings:
+      base:
+        PRODUCT_NAME: PolskiWhisper
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        COMBINE_HIDPI_IMAGES: YES
+        ENABLE_PREVIEWS: YES
+    scheme:
+      gatherCoverageData: true
+      commandLineArguments:
+        "-NSDocumentRevisionsDebugMode YES": false
+      environmentVariables:
+        OS_ACTIVITY_MODE: default

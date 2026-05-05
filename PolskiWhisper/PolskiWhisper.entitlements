@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+		ENTITLEMENTS - PolskiWhisper
+
+		ŚWIADOMA DECYZJA: App Sandbox WYŁĄCZONY (ADR-001).
+		Powód: Accessibility API (CGEventTap dla globalnego hotkey, CGEvent.post
+		dla auto-paste Cmd+V) NIE działa w sandbox. Aplikacja wymaga pełnego
+		dostępu do systemu dla swojej głównej funkcji.
+
+		Konsekwencja: brak dystrybucji przez Mac App Store. Distribution przez
+		GitHub Releases (notarization wymagana gdy public release).
+
+		Hardened runtime exceptions są potrzebne dla:
+		- WhisperKit używa CoreML JIT compilation
+		- Niektóre operacje audio AVFoundation wymagają unsigned executable memory
+	-->
+
+	<key>com.apple.security.cs.allow-jit</key>
+	<true/>
+
+	<key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+	<true/>
+
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<true/>
+
+	<key>com.apple.security.device.audio-input</key>
+	<true/>
+
+	<key>com.apple.security.automation.apple-events</key>
+	<true/>
+</dict>
+</plist>
