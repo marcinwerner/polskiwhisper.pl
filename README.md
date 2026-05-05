@@ -127,6 +127,10 @@ PolskiWhisper jest budowany na ramieniu olbrzymów. Zobacz [ACKNOWLEDGEMENTS.md]
 - 🐛 [GitHub Issues](https://github.com/marcinwerner/polskiwhisper.pl/issues) - bug reporty i feature requesty
 - 💬 [Dyskusje](https://github.com/marcinwerner/polskiwhisper.pl/discussions) - pytania, sugestie
 
+## Filozofia projektu
+
+Cześć, PolskiWhisper jest projektem hobbystycznym side-project. Bez Apple Developer ID, bez auto-install, bez telemetrii. Dystrybuowany przez DMG na GitHub Releases. Jeśli oczekujesz "premium polished product" z Mac App Store - to nie ten projekt. Jeśli chcesz darmowe lokalne, bezpieczne, szybkie, wydajne narzędzie do dyktowania po polsku z czystym privacy stance - jesteś we właściwym miejscu. Częstuj się i używaj. Powodzenia!
+
 ---
 
 **Status**: ✅ v0.1 - MVP gotowy do użycia. Funkcjonalny, stabilny, polski.
