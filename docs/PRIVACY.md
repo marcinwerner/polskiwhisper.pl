@@ -2,25 +2,24 @@
 
 > Ten dokument opisuje **dokładnie** jakie dane są zbierane, gdzie są zapisywane i jakie połączenia sieciowe wykonuje aplikacja. Każde stwierdzenie tu jest weryfikowalne przez audyt kodu.
 
-**Ostatnia aktualizacja**: 2026-05-04
-**Wersja aplikacji**: pre-release (Etap 0)
+**Ostatnia aktualizacja**: 2026-05-05
+**Wersja aplikacji**: 0.1.1
 
 ## TL;DR
 
-- ✅ **Twoje słowa nie opuszczają Twojego komputera**. Cała transkrypcja i post-processing dzieje się lokalnie
+- ✅ **Twoje słowa nie opuszczają Twojego komputera**. Cała transkrypcja dzieje się lokalnie
 - ✅ **Brak konta**, brak loginu, brak ID urządzenia
 - ✅ **Brak telemetrii**, brak analytics, brak crash reportingu, brak "anonymous usage stats"
 - ✅ **Zero historii transkrypcji** - aplikacja nie zapisuje co dyktowałeś
-- ⚠️ **Jedno wyjątek**: pobieranie modeli AI z Hugging Face podczas onboardingu (Whisper) lub Settings (zmiana modelu). To jest jednorazowe i transparentne
-- ⚠️ **Drugi wyjątek**: jeśli włączysz post-processing LLM, aplikacja komunikuje się z Ollama na `localhost:11434` (czyli z procesem na Twoim komputerze, nie z chmurą)
+- ⚠️ **Jedyny wyjątek**: pobieranie modelu Whisper z Hugging Face podczas onboardingu lub w Settings (zmiana modelu). To jest jednorazowe i transparentne
 
 ## Pełna lista połączeń sieciowych
 
-PolskiWhisper wykonuje połączenia sieciowe **wyłącznie w 4 sytuacjach**:
+PolskiWhisper wykonuje połączenia sieciowe **wyłącznie w jednym przypadku**:
 
 ### 1. Pobieranie modelu Whisper
 
-**Kiedy**: 
+**Kiedy**:
 - Podczas onboardingu (pobierany domyślny model `large-v3-turbo`)
 - Gdy w Settings → Whisper → Models zmienisz model lub klikniesz "Pobierz"
 
@@ -28,49 +27,17 @@ PolskiWhisper wykonuje połączenia sieciowe **wyłącznie w 4 sytuacjach**:
 
 **Co jest wysyłane**: standard HTTPS GET request - nazwa modelu, nic ponadto. Zero ID urządzenia, zero "user agent" identyfikującego Cię.
 
-**Co jest pobierane**: pliki wag modelu CoreML (`.mlmodelc` packages, ~1-3 GB w zależności od modelu)
+**Co jest pobierane**: pliki wag modelu CoreML (`.mlmodelc` packages, ~547 MB dla domyślnego modelu, do ~3 GB dla largest)
 
 **Gdzie zapisane**: `~/Library/Caches/PolskiWhisper/whisper-models/`
 
-**Weryfikacja**: 
+**Weryfikacja**:
 ```bash
 # Wszystkie miejsca w kodzie gdzie pobierany jest model:
 grep -rn "huggingface.co" PolskiWhisper/
 ```
 
-### 2. Komunikacja z Ollama (localhost)
-
-**Kiedy**:
-- Gdy włączysz post-processing LLM w Settings
-- Każde wciśnięcie hotkey i zakończenie nagrywania (gdy LLM włączony)
-- Pobieranie modelu LLM podczas onboardingu
-
-**Endpoint**: `http://localhost:11434/api/*` (HTTP nie HTTPS, bo to localhost)
-
-**Co jest wysyłane**: 
-- Surowa transkrypcja (przez `/api/generate`) z system promptem
-- Zapytania o listę zainstalowanych modeli (`/api/tags`)
-- Zapytania o status pobierania (`/api/pull`)
-
-**Z kim**: z lokalnym procesem Ollama na Twoim komputerze. **NIE z chmurą Ollama.com**. Tylko z `localhost`.
-
-**Weryfikacja**:
-```bash
-# Wszystkie miejsca w kodzie gdzie używana jest Ollama:
-grep -rn "localhost:11434\|OllamaService" PolskiWhisper/
-
-# W aplikacji jest hardcoded "localhost" - żaden inny endpoint Ollama nie jest możliwy bez modyfikacji kodu
-```
-
-### 3. Pobieranie modelu LLM przez Ollama
-
-**Kiedy**: gdy klikniesz "Pobierz Bielik 11B" lub inny model w Settings → LLM
-
-**Endpoint**: `http://localhost:11434/api/pull` (Ollama wewnętrznie pobiera z HuggingFace lub Ollama Hub)
-
-**Faktyczne pobieranie**: robi je Ollama, nie PolskiWhisper. PolskiWhisper tylko inicjuje przez API i wyświetla progress.
-
-### 4. Co aplikacja **NIE robi**
+### 2. Co aplikacja **NIE robi**
 
 ❌ Brak wywołań do `polskiwhisper.pl` lub innych domen autora
 ❌ Brak Sentry, Firebase, Crashlytics, Mixpanel, Amplitude, Google Analytics
@@ -88,13 +55,13 @@ grep -rn "localhost:11434\|OllamaService" PolskiWhisper/
 **Format**: macOS UserDefaults plist (binary)
 **Zawartość**: Twoje wybrane preferencje:
 - Wybrany model Whisper
-- Wybrany model LLM (jeśli włączony)
-- Włącz/wyłącz post-processing
 - Hotkey (np. "Left Option")
+- Tryb hotkey (toggle / hold)
+- Maksymalny czas nagrywania
 - Pozycja okna dyktowania
 - Dźwięki start/stop on/off
 - Autostart on/off
-- Motyw (system/jasny/ciemny)
+- Pokaż ikonę w Docku
 
 **Jak usunąć**:
 ```bash
@@ -108,7 +75,7 @@ defaults delete pl.polskiwhisper.app
 **Zawartość**:
 - Custom Words (słowa do "boost" w Whisper)
 - Find & Replace rules
-- AI Vocabulary (terminy dla LLM system prompt)
+- AI Vocabulary (terminy do przyszłego post-processingu - obecnie nieużywane)
 
 **Jak usunąć**:
 ```bash
@@ -167,7 +134,7 @@ cat PolskiWhisper/PolskiWhisper.entitlements
 cat PolskiWhisper/Info.plist
 ```
 
-**Każdy URL w kodzie jest hardcoded** (nie pochodzi z konfiguracji). Wszystkie 4 endpointy opisane wyżej i nic więcej.
+**Każdy URL w kodzie jest hardcoded** (nie pochodzi z konfiguracji). Jeden endpoint opisany wyżej (HuggingFace - pobieranie modelu Whisper) i nic więcej.
 
 ## Network monitoring (dodatkowy audit)
 
@@ -178,8 +145,8 @@ Jeśli chcesz mieć 100% pewność, że aplikacja nie wysyła nic poza zadeklaro
 - **`tcpdump`** lub **Wireshark** - dla advanced users
 
 Po uruchomieniu PolskiWhisper powinieneś zobaczyć:
-- Pierwszy run (onboarding): połączenie do `huggingface.co` (pobranie modelu) i opcjonalnie do `localhost:11434` (Ollama)
-- Każde dyktowanie: opcjonalnie połączenie do `localhost:11434` (jeśli LLM włączony)
+- Pierwszy run (onboarding): połączenie do `huggingface.co` (pobranie modelu Whisper)
+- Każde dyktowanie: **brak połączeń sieciowych** - wszystko lokalnie
 - **Nic innego**
 
 Jeśli zobaczysz inne połączenia - to bug. Zgłoś przez [Issues](https://github.com/marcinwerner/polskiwhisper.pl/issues).

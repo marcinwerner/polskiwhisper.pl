@@ -72,9 +72,8 @@ Po instalacji aplikacja działa w pasku menu (ikona mikrofonu w prawym górnym r
 - **Cmd+,** lub menu bar → "Otwórz Ustawienia..." aby zmienić:
   - Hotkey (5 opcji + tryb toggle/przytrzymanie)
   - Model Whisper (7 opcji od 75 MB do 3 GB)
-  - Włączyć opcjonalne oczyszczanie tekstu przez AI (Bielik 11B)
-  - Słownictwo własne (boost rozpoznawania nazw, find&replace)
-  - Dźwięki, max czas nagrywania, autostart przy logowaniu
+  - Słownictwo własne (boost rozpoznawania nazw, find&replace, eksport/import JSON)
+  - Dźwięki, max czas nagrywania, autostart przy logowaniu, ikonę w Docku
 
 ## Najczęstsze problemy
 

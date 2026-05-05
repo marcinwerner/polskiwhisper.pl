@@ -46,7 +46,7 @@ Reporter dostaje credit (chyba że woli pozostać anonimowo).
 
 ## Out of scope
 
-- Lukami w third-party dependencies (WhisperKit, Ollama, GRDB, etc.) zajmują się ich autorzy. Pełna lista w [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md). Zgłaszaj im bezpośrednio.
+- Lukami w third-party dependencies (WhisperKit, GRDB, LaunchAtLogin) zajmują się ich autorzy. Pełna lista w [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md). Zgłaszaj im bezpośrednio.
 - Lukami w macOS - Apple Security Bounty Program: https://security.apple.com/bounty/
 
 ## Bezpieczeństwo by architecture

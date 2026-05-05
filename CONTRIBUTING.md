@@ -58,7 +58,7 @@ Pełna dokumentacja: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 #### Architektura
 
 Kluczowe zasady (do wglądu w kodzie):
-- **Single responsibility** per service (AudioRecorder, WhisperService, OllamaService, etc.)
+- **Single responsibility** per service (AudioRecorder, WhisperService, PasteService, etc.)
 - **Orchestrator pattern** - DictationEngine koordynuje cały flow
 - **State management**: `@Observable` classes + `@MainActor` dla UI
 - **Layered structure**: Sources/App, Sources/Features/{Dictation, UI, Onboarding, Hotkey}, Sources/Data, Sources/Supporting
@@ -89,7 +89,7 @@ Wszystkie URLs muszą być **hardcoded** (nie z konfiguracji). Zmiana network be
 - **Telemetria** - nawet "anonimowa", zero. Aplikacja jest privacy-first by architecture.
 - **Cloud sync features** - lokalne narzędzie, świadoma decyzja.
 - **Multi-platform port** (iOS, Linux, Windows) - macOS native to focus, fork jeśli potrzebujesz.
-- **Cooperative AI services** w stylu OpenAI API / Anthropic API - tylko lokalny LLM (Ollama).
+- **Chmurowe API AI** w stylu OpenAI / Anthropic - aplikacja jest w pełni offline by design.
 - **Subtle language changes** poza polski - aplikacja jest dedykowana polskiej społeczności.
 
 ## Licencja

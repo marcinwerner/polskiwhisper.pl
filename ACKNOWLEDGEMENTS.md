@@ -20,12 +20,6 @@ Aplikacja jest budowana z wykorzystaniem niżej wymienionych projektów open sou
 - **Licencja**: MIT
 - **Repozytorium**: https://github.com/openai/whisper
 
-### KeyboardShortcuts
-- **Funkcja**: obsługa konfigurowalnych globalnych skrótów klawiszowych
-- **Copyright**: © Sindre Sorhus
-- **Licencja**: MIT
-- **Repozytorium**: https://github.com/sindresorhus/KeyboardShortcuts
-
 ### LaunchAtLogin-Modern
 - **Funkcja**: autostart aplikacji przy logowaniu do macOS
 - **Copyright**: © Sindre Sorhus
@@ -43,30 +37,6 @@ Aplikacja jest budowana z wykorzystaniem niżej wymienionych projektów open sou
 - **Copyright**: © Sparkle Project
 - **Licencja**: MIT
 - **Repozytorium**: https://github.com/sparkle-project/Sparkle
-
----
-
-## Komponenty zewnętrzne (uruchamiane poza aplikacją)
-
-### Ollama
-- **Funkcja**: lokalny runtime LLM, wywoływany przez HTTP API
-- **Copyright**: © 2023 Ollama
-- **Licencja**: MIT
-- **Repozytorium**: https://github.com/ollama/ollama
-- **Status**: NIE jest bundlowane z aplikacją. Użytkownik instaluje samodzielnie.
-
-### Bielik 11B v2.3 (domyślny LLM dla post-processingu, opcjonalny)
-- **Funkcja**: polski model językowy do post-processingu transkrypcji
-- **Copyright**: © SpeakLeash
-- **Licencja**: Apache License 2.0
-- **Strona modelu**: https://huggingface.co/speakleash/Bielik-11B-v2.3-Instruct
-- **Status**: NIE jest bundlowane. Użytkownik pobiera przez Ollama (`ollama pull SpeakLeash/bielik-11b-v2.3-instruct:Q4_K_M`).
-
-### Inne modele LLM (do wyboru w ustawieniach)
-- **llama-3.2:3b-instruct** - © Meta Platforms, licencja Llama 3.2 Community License
-- **phi-3.5:3.8b** - © Microsoft, licencja MIT
-- **qwen-2.5:14b-instruct** - © Alibaba Cloud, licencja Apache 2.0
-- Wszystkie pobierane przez Ollama, nie bundlowane.
 
 ---
 

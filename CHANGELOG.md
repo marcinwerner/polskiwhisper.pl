@@ -2,6 +2,45 @@
 
 Format zgodny z [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) + [Semantic Versioning](https://semver.org/lang/pl/).
 
+## [0.1.1] - 2026-05-05
+
+Release naprawowy - poprawki bezpieczeństwa, jakości życia i uproszczenie aplikacji.
+
+### Naprawione
+
+- **Halucynacja przy ciszy** - po taptnięciu i braku mowy aplikacja wklejała frazy
+  typu "Dziękuję za oglądanie" / "Subskrybujcie" (Whisper trenowany na YouTube
+  outros). Teraz przed transkrypcją sprawdzamy maksymalny RMS audio - jeśli było
+  cicho, nie wywołujemy Whispera w ogóle. Cisza = nic się nie wkleja.
+- **Klik w ikonę w Docku** otwiera teraz Ustawienia (wcześniej nic się nie działo)
+- **Filter halucynacji odporny na warianty bez polskich znaków** - "Dziekuje za
+  ogladanie" jest łapane tak samo jak "Dziękuję za oglądanie"
+
+### Bezpieczeństwo / prywatność
+
+- Logger nie wycieka treści transkrypcji ani słownictwa do unified log macOS.
+  Wcześniej `os.Logger` z `privacy: .public` mógł logować surowy tekst (gdy
+  filter halucynacji ucinał coś z transkrypcji) oraz custom words / find&replace
+  rules / AI vocab terms. Teraz logujemy tylko długości / id / metadata.
+  Deklaracja prywatności w `Logger.swift` zgadza się z faktycznym kodem.
+- Usunięte zbędne uprawnienie `com.apple.security.automation.apple-events`
+  i `NSAppleEventsUsageDescription` z Info.plist - aplikacja faktycznie ich
+  nie używa (CGEvent.post na .cghidEventTap nie wymaga Apple Events)
+
+### Usunięte
+
+- **Integracja z Ollama / Bielik 11B / inne lokalne LLM-y** - post-processing
+  przez LLM (zakładka "Model AI" w Ustawieniach) został usunięty. Domyślnie był
+  wyłączony, Whisper Turbo daje wystarczającą jakość po polsku. Mniejszy kod,
+  prostszy UX. Jeśli kiedyś polish potrzebny - można przywrócić z git history.
+- Nieużywana dependency `KeyboardShortcuts` (custom `ModifierKeyMonitor` ją
+  zastąpił od początku) - mniejszy DMG, mniejszy attack surface
+
+### Zmienione
+
+- README zawiera obraz hero + opis bez wzmianek o LLM
+- Pipeline transkrypcji: 3 kroki (Whisper → Vocabulary → Paste) zamiast 4
+
 ## [0.1.0] - 2026-05-05
 
 Pierwszy publiczny release. Aplikacja jest funkcjonalna i stabilna - gotowa do osobistego użycia oraz dystrybucji prywatnej.
