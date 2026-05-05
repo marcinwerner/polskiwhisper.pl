@@ -126,6 +126,7 @@ PolskiWhisper jest budowany na ramieniu olbrzymów. Zobacz [ACKNOWLEDGEMENTS.md]
 
 - 🐛 [GitHub Issues](https://github.com/marcinwerner/polskiwhisper.pl/issues) - bug reporty i feature requesty
 - 💬 [Dyskusje](https://github.com/marcinwerner/polskiwhisper.pl/discussions) - pytania, sugestie
+- 📧 **kontakt@marcinwerner.com** - inne tematy (komercyjne, kolaboracje, prasa)
 
 ## Filozofia projektu
 
