@@ -16,7 +16,7 @@ PolskiWhisper to **darmowe, lokalne narzędzie do promptowania głosowego dla ma
 
 - ✅ **Dyktowanie po polsku** z dokładnością Whisper Large-v3 Turbo (OpenAI, Sept 2024)
 - ✅ **Działa wszędzie** - Notatki, Slack, Claude, przeglądarka, Mail, terminal
-- ✅ **W pełni offline** po jednorazowym pobraniu modelu (~547 MB)
+- ✅ **W pełni offline** po jednorazowym pobraniu modelu (~1.5 GB dla domyślnego Whisper Turbo)
 - ✅ **Konfigurowalny hotkey** (lewy/prawy Option, Command, Fn) + tryb toggle/przytrzymanie
 - ✅ **Słownictwo własne** - boost rozpoznawania nazw, reguły Find & Replace, eksport/import JSON
 - ✅ **Real-time waveform** - widzisz na żywo poziom dźwięku podczas mówienia
@@ -30,7 +30,7 @@ PolskiWhisper to **darmowe, lokalne narzędzie do promptowania głosowego dla ma
 | **macOS** | 14 Sonoma lub nowszy |
 | **Procesor** | Apple Silicon (M1/M2/M3/M4) - Intel nie wspierany |
 | **RAM** | 8 GB |
-| **Dysk** | ~600 MB na model Whisper |
+| **Dysk** | ~1.5 GB na domyślny model Whisper (do 3 GB jeśli wybierzesz Large v3) |
 | **Mikrofon** | wbudowany lub zewnętrzny |
 
 ## Instalacja
@@ -62,7 +62,7 @@ Pełna instrukcja krok-po-kroku w [docs/INSTALL.md](docs/INSTALL.md), włącznie
 **Performance** (zmierzone na MacBook Pro M1 16GB):
 - Whisper transcribe 9s mowy: **~1.5s**
 - Load modelu z cache do RAM: **~1s**
-- Pierwsze pobranie modelu: 1-3 min (zależy od internetu, ~547 MB)
+- Pierwsze pobranie modelu: 3-8 min (zależy od internetu, ~1.5 GB dla domyślnego)
 
 ## Prywatność (architectural, nie marketingowa)
 

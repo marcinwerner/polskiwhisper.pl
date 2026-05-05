@@ -67,13 +67,26 @@ final class WhisperService {
             case .base: return "Base (145 MB, mierna jakość)"
             case .small: return "Small (460 MB, dobra jakość)"
             case .medium: return "Medium (1.5 GB, bardzo dobra jakość)"
-            case .largeV3Turbo547: return "Whisper Turbo 547 MB (rekomendowany - dobry polski, szybki)"
-            case .largeV3Turbo: return "Whisper Turbo 1.5 GB (najlepszy polski)"
+            case .largeV3Turbo547: return "Whisper Turbo 547 MB (lite - mniejszy, szybszy)"
+            case .largeV3Turbo: return "Whisper Turbo 1.5 GB (rekomendowany - najlepszy polski)"
             case .largeV3: return "Large v3 3 GB (najlepsza jakość, wolny)"
             }
         }
 
-        static let `default`: Model = .largeV3Turbo547
+        /// Przybliżony rozmiar modelu w bajtach - do UI progress / messaging.
+        var approximateBytes: Int64 {
+            switch self {
+            case .tiny: return 75_000_000
+            case .base: return 145_000_000
+            case .small: return 460_000_000
+            case .medium: return 1_500_000_000
+            case .largeV3Turbo547: return 547_000_000
+            case .largeV3Turbo: return 1_500_000_000
+            case .largeV3: return 3_000_000_000
+            }
+        }
+
+        static let `default`: Model = .largeV3Turbo
     }
 
     // MARK: - State

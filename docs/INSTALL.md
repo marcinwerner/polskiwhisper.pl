@@ -5,7 +5,7 @@
 - **macOS 14 Sonoma** lub nowszy
 - **Apple Silicon** (M1/M2/M3/M4 - Intel nie jest wspierany)
 - **8 GB RAM** minimum (16 GB dla komfortowej pracy z modelem AI)
-- **2 GB wolnego miejsca** na dysku (model Whisper Turbo: ~547 MB + cache + audio)
+- **3 GB wolnego miejsca** na dysku (domyślny Whisper Turbo: ~1.5 GB + cache + audio)
 - **Mikrofon** (wbudowany lub zewnętrzny)
 
 ## Krok 1: Pobranie
@@ -53,7 +53,7 @@ Po uruchomieniu aplikacja przeprowadzi Cię przez konfigurację (6 kroków):
    - **Przeciągnij** PolskiWhisper z folderu Aplikacje do listy
    - Włącz przełącznik
    - Wróć do onboardingu, kliknij "Sprawdź ponownie"
-4. **Model AI** - aplikacja pobierze Whisper Turbo (~547 MB, 1-2 minuty)
+4. **Model AI** - aplikacja pobierze domyślny Whisper Turbo (~1.5 GB, 3-8 minut zależnie od internetu)
 5. **Skrót klawiszowy** - default Lewy Option (zmienialny w Ustawieniach)
 6. **Gotowe** - możesz dyktować
 
@@ -89,7 +89,7 @@ Po instalacji aplikacja działa w pasku menu (ikona mikrofonu w prawym górnym r
 ### "Każde nagrywanie wkleja 'Dzięki za oglądanie'" / inne dziwne frazy
 → To halucynacja Whispera (model trenowany na YouTube subtitles). Aplikacja ma filter ale czasem przepuszcza. Mów wyraźnie i głośniej.
 
-### "Pierwszy raz pobiera model 547 MB - długo trwa"
+### "Pierwszy raz pobiera model 1.5 GB - długo trwa"
 → Normalne. Pobiera się **raz**. Kolejne uruchomienia ładują z cache (~3-5 sekund).
 
 ### "Aplikacja zaczęła się dziwnie zachowywać"
@@ -102,7 +102,7 @@ Po instalacji aplikacja działa w pasku menu (ikona mikrofonu w prawym górnym r
 3. Opcjonalnie usuń pliki:
    - `~/Library/Application Support/PolskiWhisper/` - słownik
    - `~/Library/Caches/PolskiWhisper/` - tymczasowe nagrania
-   - `~/Documents/huggingface/models/argmaxinc/whisperkit-coreml/openai_whisper-large-v3-v20240930_547MB/` - model AI (~547 MB)
+   - `~/Documents/huggingface/models/argmaxinc/whisperkit-coreml/openai_whisper-large-v3-v20240930/` - model AI (~1.5 GB)
    - `~/Library/Preferences/pl.polskiwhisper.app.plist` - preferencje
 
 ## Wsparcie

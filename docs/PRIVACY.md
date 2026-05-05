@@ -27,7 +27,7 @@ PolskiWhisper wykonuje połączenia sieciowe **wyłącznie w jednym przypadku**:
 
 **Co jest wysyłane**: standard HTTPS GET request - nazwa modelu, nic ponadto. Zero ID urządzenia, zero "user agent" identyfikującego Cię.
 
-**Co jest pobierane**: pliki wag modelu CoreML (`.mlmodelc` packages, ~547 MB dla domyślnego modelu, do ~3 GB dla largest)
+**Co jest pobierane**: pliki wag modelu CoreML (`.mlmodelc` packages, ~1.5 GB dla domyślnego Whisper Turbo, do ~3 GB dla Large v3)
 
 **Gdzie zapisane**: `~/Library/Caches/PolskiWhisper/whisper-models/`
 
