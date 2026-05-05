@@ -62,9 +62,6 @@ packages:
   WhisperKit:
     url: https://github.com/argmaxinc/WhisperKit
     from: 0.7.0
-  KeyboardShortcuts:
-    url: https://github.com/sindresorhus/KeyboardShortcuts
-    from: 2.0.0
   GRDB:
     url: https://github.com/groue/GRDB.swift
     from: 6.29.0
@@ -98,7 +95,6 @@ targets:
     dependencies:
       - package: WhisperKit
         product: WhisperKit
-      - package: KeyboardShortcuts
       - package: GRDB
       - package: LaunchAtLogin
     settings:

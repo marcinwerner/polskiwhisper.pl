@@ -33,8 +33,6 @@
 Wydane na licencji MIT.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>PolskiWhisper potrzebuje dostępu do mikrofonu, aby nagrywać Twój głos do transkrypcji. Audio jest przetwarzane lokalnie i nie opuszcza Twojego komputera.</string>
-	<key>NSAppleEventsUsageDescription</key>
-	<string>PolskiWhisper używa Apple Events tylko do symulowania klawisza Cmd+V w aktywnej aplikacji, aby wkleić przetłumaczony tekst.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSSupportsAutomaticTermination</key>
