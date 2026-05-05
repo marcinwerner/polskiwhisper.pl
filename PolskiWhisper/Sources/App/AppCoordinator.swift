@@ -72,6 +72,11 @@ final class AppCoordinator {
         // Register UserDefaults defaults (np. playSounds=true)
         SoundService.registerDefaults()
 
+        // Wymuszenie init VocabularyStore - triggeruje DB migration przy starcie
+        // (zamiast lazy przy first use). Dzięki temu migracje są zsynchronizowane
+        // z release aplikacji, plus pipeline transcribe nie ma cold-start DB.
+        _ = VocabularyStore.shared
+
         // Apply Dock visibility z Settings (default false - menu bar only)
         applyDockVisibility(showInDock)
 
