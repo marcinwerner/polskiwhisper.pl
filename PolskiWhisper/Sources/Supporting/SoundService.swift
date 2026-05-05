@@ -70,6 +70,11 @@ enum SoundService {
             return  // sounds disabled
         }
         if let nsSound = NSSound(named: sound.rawValue) {
+            // Stop poprzedni instance jeśli ten sam dźwięk już gra
+            // (gdy user szybko taptuje, multiple "Tink" overlapping → "Already playing" w logach).
+            if nsSound.isPlaying {
+                nsSound.stop()
+            }
             nsSound.play()
             Log.app.debug("Played sound: \(sound.rawValue, privacy: .public)")
         } else {

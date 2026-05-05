@@ -131,6 +131,7 @@ final class FloatingDictationWindow {
 struct FloatingDictationContent: View {
 
     @State private var coordinator = AppCoordinator.shared
+    @State private var loadingMessages = LoadingMessages.shared
     @State private var elapsedSeconds: Int = 0
     @State private var timer: Timer?
 

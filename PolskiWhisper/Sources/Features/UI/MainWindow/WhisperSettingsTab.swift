@@ -11,6 +11,7 @@ import SwiftUI
 struct WhisperSettingsTab: View {
 
     @State private var coordinator = AppCoordinator.shared
+    @State private var loadingMessages = LoadingMessages.shared
     @State private var selectedModel: WhisperService.Model = .default
     @State private var isChangingModel: Bool = false
     @State private var loadError: String?
@@ -115,9 +116,10 @@ struct WhisperSettingsTab: View {
                         switch service.loadPhase {
                         case .downloading(let progress):
                             HStack {
-                                Text("Pobieranie modelu \(selectedModel.displayName)...")
+                                Text(loadingMessages.currentMessage)
                                     .font(.callout)
                                     .fontWeight(.medium)
+                                    .lineLimit(1)
                                 Spacer()
                                 Text("\(Int(progress * 100))%")
                                     .font(.callout.monospacedDigit())
@@ -125,17 +127,22 @@ struct WhisperSettingsTab: View {
                             }
                             ProgressView(value: progress)
                                 .progressViewStyle(.linear)
-                            Text("Pobieranie jednorazowe. Następne uruchomienia będą natychmiastowe.")
+                            Text("To się dzieje tylko podczas pierwszego uruchomienia aplikacji")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
 
                         case .loadingToRAM:
-                            HStack(spacing: 8) {
-                                ProgressView()
-                                    .scaleEffect(0.6)
-                                Text("Ładowanie modelu do pamięci... (~5-30s)")
-                                    .font(.callout)
-                                    .fontWeight(.medium)
+                            VStack(alignment: .leading, spacing: 6) {
+                                HStack(spacing: 8) {
+                                    ProgressView()
+                                        .scaleEffect(0.6)
+                                    Text(loadingMessages.currentMessage)
+                                        .font(.callout)
+                                        .fontWeight(.medium)
+                                }
+                                Text("To się dzieje tylko podczas pierwszego uruchomienia aplikacji")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
                             }
 
                         case .ready, .idle:

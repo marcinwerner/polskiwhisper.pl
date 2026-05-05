@@ -105,7 +105,12 @@ final class WhisperService {
     private(set) var loadedModel: Model?
     private(set) var isLoading: Bool = false
     private(set) var loadProgress: Double = 0.0  // 0.0...1.0 (zachowane dla backward compat)
-    private(set) var loadPhase: LoadPhase = .idle
+    private(set) var loadPhase: LoadPhase = .idle {
+        didSet {
+            // Sync rotating messages co 5s w UI dla long load operacji
+            LoadingMessages.shared.update(phase: loadPhase)
+        }
+    }
 
     private var whisperKit: WhisperKit?
 

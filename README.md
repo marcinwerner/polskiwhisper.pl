@@ -63,6 +63,7 @@ Pełna instrukcja krok-po-kroku w [docs/INSTALL.md](docs/INSTALL.md), włącznie
 - Whisper transcribe 9s mowy: **~1.5s**
 - Load modelu z cache do RAM: **~1s**
 - Pierwsze pobranie modelu: 3-8 min (zależy od internetu, ~1.5 GB dla domyślnego)
+- **Pierwsze uruchomienie po pobraniu modelu**: 1-3 min (Apple Neural Engine kompiluje model, jednorazowo). Każde kolejne uruchomienie aplikacji zajmie moment.
 
 ## Prywatność (architectural, nie marketingowa)
 
