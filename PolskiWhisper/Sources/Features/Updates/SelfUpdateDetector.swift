@@ -14,7 +14,11 @@ import Observation
 /// do Applications, replace, ale nie zrestartował aplikacji).
 ///
 /// Mechanizm: porównuje executable mtime nagranego przy starcie z aktualnym.
-/// Sprawdza co 60s. Jeśli mtime się zmienił → mtime różny od baseline = ktoś podmienił.
+/// Sprawdza co 30s. Jeśli mtime się zmienił → mtime różny od baseline = ktoś podmienił.
+///
+/// **DispatchSourceTimer zamiast Timer.scheduledTimer**: macOS App Nap może wstrzymywać
+/// Timer dla aplikacji w trybie LSUIElement (background menu bar app). DispatchSourceTimer
+/// na queue .main jest immune to App Nap - tickuje cały czas.
 ///
 /// UX: pierwszy detekcja → modal alert "Wykryto nową wersję, zrestartować?". Dalsze
 /// detekcje (jeśli user kliknie Później) → menu bar badge z buttonem Restart.
@@ -30,8 +34,8 @@ final class SelfUpdateDetector {
     /// mtime executable w czasie startu aplikacji - baseline do porównania.
     private let baselineMtime: Date?
 
-    /// Timer do okresowego check (co 60s).
-    private var checkTimer: Timer?
+    /// DispatchSourceTimer do okresowego check (co 30s) - immune to macOS App Nap.
+    private var checkTimer: DispatchSourceTimer?
 
     /// Czy user już widział modal (żeby nie spamować) - po pierwszej detekcji
     /// kolejne updateRestartRequired tylko aktualizują badge, bez modal.
@@ -45,14 +49,19 @@ final class SelfUpdateDetector {
     // MARK: - Public API
 
     /// Rozpoczyna periodic check. Wywoływane raz przy starcie aplikacji.
+    /// DispatchSourceTimer (immune to App Nap) zamiast Timer.scheduledTimer.
     func startMonitoring() {
         guard checkTimer == nil else { return }
-        checkTimer = Timer.scheduledTimer(withTimeInterval: 60.0, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                self?.checkForReplacement()
-            }
+
+        let timer = DispatchSource.makeTimerSource(queue: .main)
+        timer.schedule(deadline: .now() + 5, repeating: 30)  // pierwszy check po 5s, potem co 30s
+        timer.setEventHandler { [weak self] in
+            self?.checkForReplacement()
         }
-        Log.app.info("SelfUpdateDetector: monitoring started (60s interval)")
+        timer.resume()
+        checkTimer = timer
+
+        Log.app.info("SelfUpdateDetector: monitoring started (DispatchSourceTimer 30s, immune to App Nap)")
     }
 
     /// Restart aplikacji - uruchamia siebie na nowo i kończy aktualną instancję.
@@ -81,18 +90,28 @@ final class SelfUpdateDetector {
     // MARK: - Internal
 
     private func checkForReplacement() {
-        guard let baseline = baselineMtime else { return }
-        guard let current = Self.executableMtime() else { return }
+        guard let baseline = baselineMtime else {
+            Log.app.debug("SelfUpdateDetector: tick - no baseline mtime")
+            return
+        }
+        guard let current = Self.executableMtime() else {
+            Log.app.debug("SelfUpdateDetector: tick - cannot read current mtime")
+            return
+        }
 
-        // Tolerancja 1 sek - nie reagujemy na drobne zmiany (touch).
-        if abs(current.timeIntervalSince(baseline)) < 1.0 {
+        let diff = current.timeIntervalSince(baseline)
+        Log.app.debug("SelfUpdateDetector: tick - mtime diff=\(diff, privacy: .public)s, restartRequired=\(self.restartRequired, privacy: .public)")
+
+        // Tolerancja 1 sek - nie reagujemy na drobne zmiany.
+        if abs(diff) < 1.0 {
             return  // bez zmian
         }
 
-        // Wykryto podmianę
+        // Wykryto podmianę - jeśli restartRequired już true, tylko upewnij się
+        // że badge jest visible (np. user mógł zamknąć modal i przegapić badge).
         if !restartRequired {
             restartRequired = true
-            Log.app.info("SelfUpdateDetector: app bundle replaced detected (baseline=\(baseline, privacy: .public), current=\(current, privacy: .public))")
+            Log.app.info("SelfUpdateDetector: app bundle replaced detected (diff=\(diff, privacy: .public)s)")
 
             // Notify menu bar żeby pokazał badge
             AppCoordinator.shared.menuBarController?.refreshUpdateItems()
