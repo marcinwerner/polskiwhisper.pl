@@ -81,6 +81,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         false
     }
 
+    /// Klik w ikonę aplikacji w Docku (gdy `showInDock = true`) - otwórz Settings.
+    /// Bez tego klik w ikonę nic nie robił, bo `applicationShouldTerminateAfterLastWindowClosed`
+    /// zwraca false (aplikacja zostaje running gdy zamkniesz Settings) - więc gdy nie ma
+    /// widocznych okien, system woła `applicationShouldHandleReopen`.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag {
+            Log.app.info("Dock icon clicked - opening Settings")
+            SettingsWindowController.shared.show()
+        }
+        return false  // false = nie aktywuj domyślnego zachowania (open new document, etc.)
+    }
+
     // MARK: - Helpers
 
     private var appVersion: String {
