@@ -155,6 +155,7 @@ final class DictationEngine {
         Log.dictation.info("Stopping dictation - starting pipeline")
 
         // Stop recording, get WAV URL
+        let maxRMS = audioRecorder.maxRawRMS  // capture przed stopRecording (które czyści state)
         guard let url = audioRecorder.stopRecording() else {
             Log.dictation.error("No recording URL - dictation aborted")
             await setError("Nagrywanie nie zostało rozpoczęte poprawnie")
@@ -162,6 +163,18 @@ final class DictationEngine {
             return
         }
         currentRecordingURL = url
+
+        // EARLY EXIT - cisza. Whisper trenowany na YouTube wstawia halucynacje
+        // ("Dzięki za oglądanie", "Subskrybujcie") gdy dostaje cichy/pusty audio.
+        // Nie wywołujemy go w ogóle - cisza = nic się nie wkleja.
+        // Próg 0.01 = bardzo cicho (typowa mowa to 0.05+, szept ~0.02).
+        if maxRMS < 0.01 {
+            Log.dictation.info("Silent recording detected (maxRMS=\(maxRMS, privacy: .public)) - skipping transcribe")
+            AppCoordinator.shared.phase = .completed(transcriptLength: 0)
+            audioRecorder.cleanupRecording(at: url)
+            await dismissFloatingWindow(after: 0.3)
+            return
+        }
 
         // Jeśli model nadal się ładuje (lazy load z startDictation) - czekaj
         if whisperService.loadedModel == nil {

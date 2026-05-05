@@ -98,24 +98,34 @@ enum WhisperHallucinationFilter {
 
     // MARK: - Private helpers
 
-    /// Porównuje dwa stringi ignorując punktuację, case i whitespace.
+    /// Porównuje dwa stringi ignorując punktuację, case, whitespace **i polskie ogonki**.
+    /// Diacritic-fold łapie warianty typu "Dziekuje za ogladanie" gdy Whisper zgubi polskie znaki.
     private static func textEqualsIgnoringPunctuation(_ a: String, _ b: String) -> Bool {
         let normalized: (String) -> String = { text in
             text.lowercased()
+                .applyingTransform(.stripDiacritics, reverse: false) ?? text.lowercased()
+        }
+        let cleaned: (String) -> String = { text in
+            normalized(text)
                 .components(separatedBy: CharacterSet.alphanumerics.union(.whitespaces).inverted)
                 .joined()
                 .trimmingCharacters(in: .whitespacesAndNewlines)
                 .replacingOccurrences(of: "  ", with: " ")
         }
-        return normalized(a) == normalized(b)
+        return cleaned(a) == cleaned(b)
     }
 
     /// Sprawdza czy text składa się WYŁĄCZNIE z halucynacji (np. "Dzięki za oglądanie. Bye bye.").
     /// Algorytm: po usunięciu wszystkich halucynacji nie zostaje nic znaczącego.
+    /// Strip diacritics przed porównaniem - łapie warianty bez polskich znaków.
     private static func isOnlyHallucinations(_ text: String) -> Bool {
-        var stripped = text.lowercased()
+        let stripDiacritics: (String) -> String = { s in
+            s.applyingTransform(.stripDiacritics, reverse: false) ?? s
+        }
+        var stripped = stripDiacritics(text.lowercased())
         for hallucination in knownHallucinations {
-            stripped = stripped.replacingOccurrences(of: hallucination.lowercased(), with: "")
+            let folded = stripDiacritics(hallucination.lowercased())
+            stripped = stripped.replacingOccurrences(of: folded, with: "")
         }
         // Po usunięciu zostały tylko białe znaki + punktuacja?
         let alphanumericLeft = stripped.unicodeScalars

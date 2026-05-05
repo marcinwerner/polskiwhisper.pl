@@ -76,6 +76,12 @@ final class AudioRecorder {
     /// UI waveform powinien obserwować tę wartość.
     private(set) var currentLevel: Float = 0.0
 
+    /// Maksymalny **surowy** RMS (przed normalizacją x5) zaobserwowany podczas całego nagrania.
+    /// Używany do detekcji ciszy - jeśli max przez całe nagranie był bardzo niski (< 0.01),
+    /// to znaczy że user nic nie powiedział i nie ma sensu wywoływać Whispera (który przy
+    /// ciszy generuje halucynacje YT outros - "Dzięki za oglądanie", "Subskrybujcie" etc.).
+    private(set) var maxRawRMS: Float = 0.0
+
     /// Rolling window ostatnich peak amplitudes (do real-time waveform display).
     /// Buffer 1024 samples @ 48kHz ≈ 21ms per peak → 80 bars = ~1.7s historii.
     private(set) var recentPeaks: [Float] = []
@@ -192,6 +198,7 @@ final class AudioRecorder {
         recordingStartedAt = Date()
         isRecording = true
         elapsedTime = 0
+        maxRawRMS = 0.0  // reset dla nowego nagrania
 
         // Timer do aktualizacji elapsedTime (UI feedback)
         elapsedTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
@@ -289,13 +296,18 @@ final class AudioRecorder {
     /// Process audio buffer: oblicz RMS + peak, konwertuj do 16kHz Int16, zapisz.
     private nonisolated func processBuffer(_ buffer: AVAudioPCMBuffer) {
         // 1. Calculate RMS i peak na ORIGINAL Float32 buffer (lepsza precyzja)
-        let rms = Self.calculateRMS(buffer: buffer)
+        let rawRMS = Self.calculateRawRMS(buffer: buffer)  // bez normalizacji - dla detekcji ciszy
+        let rms = min(rawRMS * 5.0, 1.0)                    // znormalizowane - dla UI level
         let peak = Self.calculatePeak(buffer: buffer)
 
         Task { @MainActor [weak self] in
-            self?.currentLevel = rms
-            self?.appendPeak(peak)
-            self?.convertAndWriteBuffer(buffer)
+            guard let self else { return }
+            self.currentLevel = rms
+            if rawRMS > self.maxRawRMS {
+                self.maxRawRMS = rawRMS
+            }
+            self.appendPeak(peak)
+            self.convertAndWriteBuffer(buffer)
         }
     }
 
@@ -385,9 +397,10 @@ final class AudioRecorder {
         return min(maxPeak * 3.0, 1.0)
     }
 
-    /// Oblicza RMS (Root Mean Square) z buffera, normalizuje do 0.0...1.0.
+    /// Oblicza **surowy** RMS (Root Mean Square) z buffera, bez normalizacji.
+    /// Speech RMS typowo 0.01...0.3, cisza < 0.005.
     /// `nonisolated` bo to pure function (nie używa instance state ani @MainActor APIs).
-    private nonisolated static func calculateRMS(buffer: AVAudioPCMBuffer) -> Float {
+    private nonisolated static func calculateRawRMS(buffer: AVAudioPCMBuffer) -> Float {
         guard let channelData = buffer.floatChannelData else { return 0 }
 
         let frameLength = Int(buffer.frameLength)
@@ -406,12 +419,7 @@ final class AudioRecorder {
             let rms = sqrt(sum / Float(frameLength))
             totalRMS += rms
         }
-        let avgRMS = totalRMS / Float(channels)
-
-        // Normalize: typical speech RMS is 0.01...0.3
-        // Map to 0.0...1.0 with some headroom
-        let normalized = min(avgRMS * 5.0, 1.0)
-        return normalized
+        return totalRMS / Float(channels)
     }
 
     /// Tworzy ścieżkę dla nowego nagrania w `~/Library/Caches/PolskiWhisper/`.
