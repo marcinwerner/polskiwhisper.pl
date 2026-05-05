@@ -89,11 +89,23 @@ final class WhisperService {
         static let `default`: Model = .largeV3Turbo
     }
 
+    // MARK: - Load phase
+
+    /// Faza ładowania modelu - pozwala UI rozróżnić download (z prawdziwym progressem)
+    /// od load do RAM (długi, bez callback - pokazujemy spinner zamiast paska).
+    enum LoadPhase: Equatable {
+        case idle
+        case downloading(progress: Double)  // 0.0...1.0 rzeczywisty
+        case loadingToRAM                    // brak progress callback - spinner
+        case ready
+    }
+
     // MARK: - State
 
     private(set) var loadedModel: Model?
     private(set) var isLoading: Bool = false
-    private(set) var loadProgress: Double = 0.0  // 0.0...1.0
+    private(set) var loadProgress: Double = 0.0  // 0.0...1.0 (zachowane dla backward compat)
+    private(set) var loadPhase: LoadPhase = .idle
 
     private var whisperKit: WhisperKit?
 
@@ -127,13 +139,16 @@ final class WhisperService {
         Log.whisper.info("Loading model: \(model.rawValue, privacy: .public)")
         isLoading = true
         loadProgress = 0.0
+        loadPhase = .downloading(progress: 0.0)
         defer {
             isLoading = false
         }
 
         do {
-            // Step 1: Download (jeśli nie cached) z progress tracking - osobny step
-            // żeby progress callback działał. WhisperKit.download zwraca folder URL.
+            // Step 1: Download (jeśli nie cached) z **rzeczywistym** progress 0-100%.
+            // Przed v0.1.1 progres był skalowany do 0-90% z zarezerwowaniem 90-100% dla
+            // load do RAM, co dawało użytkownikowi mylne "stuck na 90%". Teraz UI
+            // rozróżnia fazy: download (pasek 0-100%) vs loadingToRAM (spinner).
             var modelFolderURL: URL?
             if !Self.isModelDownloaded(model) {
                 Log.whisper.info("Model not cached - downloading with progress tracking")
@@ -141,8 +156,9 @@ final class WhisperService {
                     variant: model.rawValue,
                     progressCallback: { [weak self] progress in
                         Task { @MainActor [weak self] in
-                            // 0...0.9 dla download (0.9-1.0 dla load do RAM)
-                            self?.loadProgress = progress.fractionCompleted * 0.9
+                            let frac = progress.fractionCompleted
+                            self?.loadProgress = frac
+                            self?.loadPhase = .downloading(progress: frac)
                         }
                     }
                 )
@@ -151,11 +167,11 @@ final class WhisperService {
                 Log.whisper.info("Model already cached, loading to RAM...")
             }
 
-            loadProgress = 0.9
+            // Step 2: Load do RAM - brak progress callback (WhisperKit init blocking).
+            // UI pokaże indeterminate spinner z tekstem "Ładowanie do pamięci...".
+            loadPhase = .loadingToRAM
+            loadProgress = 1.0  // pasek pełny - spinner przejmuje rolę progress UI
 
-            // Step 2: Load do RAM. download:true bo WhisperKitConfig z model:
-            // wymaga że model jest dostępny - jeśli już pobrany w cache, WhisperKit
-            // pomija pobieranie. Brak download:false bo wymagałoby modelFolder URL.
             let config = WhisperKitConfig(
                 model: model.rawValue,
                 modelFolder: modelFolderURL?.path,
@@ -168,12 +184,13 @@ final class WhisperService {
 
             whisperKit = try await WhisperKit(config)
             loadedModel = model
-            loadProgress = 1.0
+            loadPhase = .ready
 
             Log.whisper.info("Model loaded successfully: \(model.rawValue, privacy: .public)")
         } catch {
             whisperKit = nil
             loadedModel = nil
+            loadPhase = .idle
             Log.whisper.error("Model load failed: \(error.localizedDescription, privacy: .public)")
             throw WhisperError.modelLoadFailed(underlying: error)
         }

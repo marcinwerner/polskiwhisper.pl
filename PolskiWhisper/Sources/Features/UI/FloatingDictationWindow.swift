@@ -184,8 +184,7 @@ struct FloatingDictationContent: View {
         case .idle:
             Image(systemName: "mic")
         case .loadingModel:
-            Image(systemName: "arrow.down.circle")
-                .symbolEffect(.pulse, options: .repeating)
+            loadingModelIcon  // ikona pobierania z circular progress ringiem
         case .recording:
             Image(systemName: "mic.fill")
                 .symbolEffect(.pulse, options: .repeating)
@@ -198,6 +197,39 @@ struct FloatingDictationContent: View {
             Image(systemName: "checkmark.circle.fill")
         case .error:
             Image(systemName: "exclamationmark.triangle.fill")
+        }
+    }
+
+    /// Ikona pobierania z circular progress ringiem dla downloading,
+    /// indeterminate spinner dla loadingToRAM.
+    @ViewBuilder
+    private var loadingModelIcon: some View {
+        let phase = coordinator.dictationEngine?.whisperService.loadPhase ?? .idle
+        ZStack {
+            switch phase {
+            case .downloading(let progress):
+                // Ring 0-100% wokół ikony
+                Circle()
+                    .trim(from: 0, to: progress)
+                    .stroke(Color.orange, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .animation(.linear(duration: 0.2), value: progress)
+                    .frame(width: 30, height: 30)
+                Image(systemName: "arrow.down.circle")
+            case .loadingToRAM:
+                // Indeterminate - spinner ring obracający się
+                Circle()
+                    .trim(from: 0, to: 0.3)
+                    .stroke(Color.orange, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .frame(width: 30, height: 30)
+                    .symbolEffect(.pulse, options: .repeating)
+                Image(systemName: "memorychip")
+                    .symbolEffect(.pulse, options: .repeating)
+            case .ready, .idle:
+                Image(systemName: "arrow.down.circle")
+                    .symbolEffect(.pulse, options: .repeating)
+            }
         }
     }
 
@@ -216,7 +248,15 @@ struct FloatingDictationContent: View {
     private var timerText: String {
         switch coordinator.phase {
         case .loadingModel:
-            return "Ładowanie..."
+            // Rozróżnij fazę download (z procentem) vs load do RAM (sam tekst)
+            switch coordinator.dictationEngine?.whisperService.loadPhase {
+            case .downloading(let progress):
+                return "\(Int(progress * 100))%"
+            case .loadingToRAM:
+                return "Ładuję..."
+            default:
+                return "Pobieranie"
+            }
         case .recording:
             return formatTime(elapsedSeconds)
         case .processingWhisper:

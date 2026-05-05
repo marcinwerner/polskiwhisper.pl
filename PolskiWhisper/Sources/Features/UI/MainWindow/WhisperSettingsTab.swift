@@ -103,21 +103,45 @@ struct WhisperSettingsTab: View {
                 }
                 .padding(.vertical, 4)
 
-                // Progress bar gdy pobieranie/ładowanie trwa
+                // Progress bar gdy pobieranie/ładowanie trwa.
+                // Rozróżniamy 2 fazy: download (rzeczywisty progress 0-100%) vs
+                // loadingToRAM (indeterminate spinner, brak callback z WhisperKit).
                 if let service = whisperService, service.isLoading || isChangingModel {
-                    let progress = service.loadProgress
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            Text(progressLabel(for: progress))
-                                .font(.callout)
-                                .fontWeight(.medium)
-                            Spacer()
-                            Text("\(Int(progress * 100))%")
-                                .font(.callout.monospacedDigit())
+                    VStack(alignment: .leading, spacing: 6) {
+                        switch service.loadPhase {
+                        case .downloading(let progress):
+                            HStack {
+                                Text("Pobieranie modelu \(selectedModel.displayName)...")
+                                    .font(.callout)
+                                    .fontWeight(.medium)
+                                Spacer()
+                                Text("\(Int(progress * 100))%")
+                                    .font(.callout.monospacedDigit())
+                                    .foregroundStyle(.secondary)
+                            }
+                            ProgressView(value: progress)
+                                .progressViewStyle(.linear)
+                            Text("Pobieranie jednorazowe. Następne uruchomienia będą natychmiastowe.")
+                                .font(.caption)
                                 .foregroundStyle(.secondary)
+
+                        case .loadingToRAM:
+                            HStack(spacing: 8) {
+                                ProgressView()
+                                    .scaleEffect(0.6)
+                                Text("Ładowanie modelu do pamięci... (~5-30s)")
+                                    .font(.callout)
+                                    .fontWeight(.medium)
+                            }
+
+                        case .ready, .idle:
+                            HStack(spacing: 8) {
+                                ProgressView()
+                                    .scaleEffect(0.6)
+                                Text("Przygotowanie...")
+                                    .font(.callout)
+                            }
                         }
-                        ProgressView(value: progress)
-                            .progressViewStyle(.linear)
                     }
                     .padding(.vertical, 4)
                 }
@@ -161,16 +185,6 @@ struct WhisperSettingsTab: View {
             if let loaded = whisperService?.loadedModel {
                 selectedModel = loaded
             }
-        }
-    }
-
-    private func progressLabel(for progress: Double) -> String {
-        if progress < 0.9 {
-            return "Pobieranie modelu..."
-        } else if progress < 1.0 {
-            return "Ładowanie do pamięci..."
-        } else {
-            return "Gotowy"
         }
     }
 
