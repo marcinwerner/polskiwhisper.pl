@@ -15,6 +15,10 @@ struct WhisperSettingsTab: View {
     @State private var isChangingModel: Bool = false
     @State private var loadError: String?
 
+    /// Dialog potwierdzenia usunięcia poprzedniego modelu po udanej zmianie.
+    @State private var modelToCleanup: WhisperService.Model?
+    @State private var modelToCleanupSize: Int64 = 0
+
     private var whisperService: WhisperService? {
         coordinator.dictationEngine?.whisperService
     }
@@ -186,10 +190,33 @@ struct WhisperSettingsTab: View {
                 selectedModel = loaded
             }
         }
+        .alert(
+            "Usunąć poprzedni model?",
+            isPresented: Binding(
+                get: { modelToCleanup != nil },
+                set: { if !$0 { modelToCleanup = nil } }
+            ),
+            presenting: modelToCleanup
+        ) { oldModel in
+            Button("Usuń (\(formatBytes(modelToCleanupSize)))") {
+                WhisperService.deleteModel(oldModel)
+                modelToCleanup = nil
+            }
+            Button("Zostaw", role: .cancel) {
+                modelToCleanup = nil
+            }
+        } message: { oldModel in
+            Text("""
+                Pomyślnie zmieniono model na \(selectedModel.displayName).
+
+                Poprzedni model \(oldModel.displayName) zajmuje \(formatBytes(modelToCleanupSize)) na dysku w `~/Documents/huggingface/`. Nie jest już używany - usunąć żeby zwolnić miejsce?
+                """)
+        }
     }
 
     private func changeModel() async {
         guard let service = whisperService else { return }
+        let previousModel = service.loadedModel
         isChangingModel = true
         loadError = nil
         defer { isChangingModel = false }
@@ -197,8 +224,24 @@ struct WhisperSettingsTab: View {
         do {
             try await service.loadModel(selectedModel)
             UserDefaults.standard.set(selectedModel.rawValue, forKey: AppCoordinator.Keys.selectedWhisperModel)
+
+            // Po pomyślnej zmianie - jeśli poprzedni model jest na dysku i to nie aktualnie
+            // wybrany model, zaproponuj cleanup. User decyduje (Tak/Nie).
+            if let prev = previousModel,
+               prev != selectedModel,
+               WhisperService.isModelDownloaded(prev),
+               let size = WhisperService.actualModelSize(for: prev) {
+                modelToCleanupSize = size
+                modelToCleanup = prev
+            }
         } catch {
             loadError = error.localizedDescription
         }
+    }
+
+    private func formatBytes(_ bytes: Int64) -> String {
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        return formatter.string(fromByteCount: bytes)
     }
 }

@@ -304,26 +304,72 @@ final class WhisperService {
 
     /// Sprawdza czy model jest dostępny lokalnie (bez pobierania).
     static func isModelDownloaded(_ model: Model) -> Bool {
-        // WhisperKit cache w ~/Documents/huggingface/models/argmaxinc/whisperkit-coreml/openai_whisper-<model>/
+        guard let path = modelDirectoryURL(for: model) else { return false }
+        return FileManager.default.fileExists(atPath: path.path)
+    }
+
+    /// Zwraca URL folderu w którym WhisperKit cache'uje dany model.
+    /// `~/Documents/huggingface/models/argmaxinc/whisperkit-coreml/openai_whisper-<model>/`
+    static func modelDirectoryURL(for model: Model) -> URL? {
         guard let docs = try? FileManager.default.url(
             for: .documentDirectory,
             in: .userDomainMask,
             appropriateFor: nil,
             create: false
         ) else {
-            return false
+            return nil
         }
-
-        // WhisperKit dodaje prefix "openai_whisper-" do model name w ścieżce repo
         let folderName = "openai_whisper-\(model.rawValue)"
-
-        let path = docs
+        return docs
             .appendingPathComponent("huggingface")
             .appendingPathComponent("models")
             .appendingPathComponent("argmaxinc")
             .appendingPathComponent("whisperkit-coreml")
             .appendingPathComponent(folderName)
+    }
 
-        return FileManager.default.fileExists(atPath: path.path)
+    /// Oblicza rzeczywisty rozmiar zajętej przestrzeni przez model na dysku.
+    /// Używa `URLResourceValues.totalFileAllocatedSize` rekursywnie.
+    static func actualModelSize(for model: Model) -> Int64? {
+        guard let url = modelDirectoryURL(for: model),
+              FileManager.default.fileExists(atPath: url.path) else {
+            return nil
+        }
+        return directorySize(at: url)
+    }
+
+    /// Usuwa model z dysku. Zwraca `true` jeśli usunięto pomyślnie.
+    @discardableResult
+    static func deleteModel(_ model: Model) -> Bool {
+        guard let url = modelDirectoryURL(for: model),
+              FileManager.default.fileExists(atPath: url.path) else {
+            Log.whisper.info("deleteModel: \(model.rawValue, privacy: .public) - nie znaleziono na dysku")
+            return false
+        }
+        do {
+            try FileManager.default.removeItem(at: url)
+            Log.whisper.info("Usunięto model: \(model.rawValue, privacy: .public)")
+            return true
+        } catch {
+            Log.whisper.error("Nie udało się usunąć modelu \(model.rawValue, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            return false
+        }
+    }
+
+    private static func directorySize(at url: URL) -> Int64 {
+        guard let enumerator = FileManager.default.enumerator(
+            at: url,
+            includingPropertiesForKeys: [.totalFileAllocatedSizeKey],
+            options: [.skipsHiddenFiles],
+            errorHandler: nil
+        ) else {
+            return 0
+        }
+        var total: Int64 = 0
+        for case let file as URL in enumerator {
+            let values = try? file.resourceValues(forKeys: [.totalFileAllocatedSizeKey])
+            total += Int64(values?.totalFileAllocatedSize ?? 0)
+        }
+        return total
     }
 }
