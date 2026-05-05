@@ -17,90 +17,101 @@ struct AboutTab: View {
 
     var body: some View {
         VStack(spacing: 14) {
-            // Hero - icon + name + version w jednej kolumnie, mniejszy footprint
-            HStack(spacing: 16) {
-                Image(systemName: "mic.fill")
-                    .font(.system(size: 40))
-                    .foregroundStyle(.tint)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("PolskiWhisper")
-                        .font(.title)
-                        .fontWeight(.semibold)
-                    Text("Wersja \(appVersion) · © 2026 Marcin Werner · MIT")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
-
-            Text("Natywna macOS aplikacja do promptowania głosowego po polsku. W pełni offline, otwarte źródło.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 24)
-
-            Divider().padding(.horizontal, 40)
-
-            // OSS - inline jako klikalne linki w jednym tekście
+            // Hero - logo + nazwa + wersja
             VStack(spacing: 4) {
-                Text("Zbudowane na:")
-                    .font(.caption)
+                Image(systemName: "mic.fill")
+                    .font(.system(size: 52))
+                    .foregroundStyle(.tint)
+                    .padding(.top, 12)
+
+                Text("PolskiWhisper")
+                    .font(.title)
+                    .fontWeight(.semibold)
+
+                Text("Wersja \(appVersion)")
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
-                HStack(spacing: 4) {
-                    ossLink("WhisperKit", url: "https://github.com/argmaxinc/WhisperKit")
-                    Text("·").foregroundStyle(.secondary)
-                    ossLink("OpenAI Whisper", url: "https://github.com/openai/whisper")
-                    Text("·").foregroundStyle(.secondary)
-                    ossLink("LaunchAtLogin", url: "https://github.com/sindresorhus/LaunchAtLogin-Modern")
-                    Text("·").foregroundStyle(.secondary)
-                    ossLink("GRDB.swift", url: "https://github.com/groue/GRDB.swift")
-                }
-                .font(.caption)
             }
 
-            Divider().padding(.horizontal, 40)
+            Divider().padding(.horizontal, 80)
 
-            // Akcje - linki + buttons w jednej linii
-            HStack(spacing: 8) {
+            // Krótki opis aplikacji
+            VStack(spacing: 4) {
+                Text("Natywna macOS aplikacja do promptowania głosowego po polsku.")
+                    .multilineTextAlignment(.center)
+                Text("W pełni offline, otwarte źródło, licencja MIT.")
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .font(.callout)
+            .padding(.horizontal, 32)
+
+            Divider().padding(.horizontal, 80)
+
+            // Komponenty open source - lista z bullet points
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Komponenty open source")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.bottom, 2)
+
+                ackLink("WhisperKit (Apache 2.0)", url: "https://github.com/argmaxinc/WhisperKit")
+                ackLink("OpenAI Whisper (MIT)", url: "https://github.com/openai/whisper")
+                ackLink("LaunchAtLogin-Modern (MIT)", url: "https://github.com/sindresorhus/LaunchAtLogin-Modern")
+                ackLink("GRDB.swift (MIT)", url: "https://github.com/groue/GRDB.swift")
+            }
+            .font(.callout)
+            .padding(.horizontal, 80)
+
+            Divider().padding(.horizontal, 80)
+
+            // Akcje - linki zewnętrzne + onboarding
+            HStack(spacing: 10) {
                 Button("Repo na GitHub") {
                     open("https://github.com/marcinwerner/polskiwhisper.pl")
                 }
                 Button("Polityka prywatności") {
                     open("https://github.com/marcinwerner/polskiwhisper.pl/blob/main/docs/PRIVACY.md")
                 }
-                Button("Pokaż onboarding") {
+                Button("Pokaż onboarding ponownie") {
                     AppCoordinator.shared.onboardingCompleted = false
                     OnboardingFlow.shared.show()
                 }
             }
-            .controlSize(.small)
 
-            Divider().padding(.horizontal, 40)
+            Divider().padding(.horizontal, 80)
 
-            // Reset - na dole, mniej eksponowane (ostrożność)
+            // Reset ustawień - na dole, mniej eksponowane bo destructive
             VStack(spacing: 4) {
                 Button("Resetuj wszystkie ustawienia...") {
                     confirmAndResetSettings()
                 }
                 .controlSize(.small)
                 .foregroundStyle(.red)
-                Text("Reset NIE usuwa słownika ani modeli Whisper")
-                    .font(.caption2)
+                Text("Reset usuwa preferencje, NIE usuwa słownika ani modeli Whisper.")
+                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             Spacer(minLength: 0)
+
+            // Copyright stopka
+            Text("© 2026 Marcin Werner · PolskiWhisper")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .padding(.bottom, 12)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     @ViewBuilder
-    private func ossLink(_ label: String, url: String) -> some View {
-        Button(label) { open(url) }
-            .buttonStyle(.link)
+    private func ackLink(_ label: String, url: String) -> some View {
+        HStack(spacing: 6) {
+            Text("•")
+                .foregroundStyle(.secondary)
+            Button(label) { open(url) }
+                .buttonStyle(.link)
+        }
     }
 
     private func open(_ url: String) {

@@ -119,7 +119,7 @@ struct WhisperSettingsTab: View {
                                 Text(loadingMessages.currentMessage)
                                     .font(.callout)
                                     .fontWeight(.medium)
-                                    .lineLimit(1)
+                                    .lineLimit(2)
                                 Spacer()
                                 Text("\(Int(progress * 100))%")
                                     .font(.callout.monospacedDigit())
@@ -127,22 +127,15 @@ struct WhisperSettingsTab: View {
                             }
                             ProgressView(value: progress)
                                 .progressViewStyle(.linear)
-                            Text("To się dzieje tylko podczas pierwszego uruchomienia aplikacji")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
 
                         case .loadingToRAM:
-                            VStack(alignment: .leading, spacing: 6) {
-                                HStack(spacing: 8) {
-                                    ProgressView()
-                                        .scaleEffect(0.6)
-                                    Text(loadingMessages.currentMessage)
-                                        .font(.callout)
-                                        .fontWeight(.medium)
-                                }
-                                Text("To się dzieje tylko podczas pierwszego uruchomienia aplikacji")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                            HStack(spacing: 8) {
+                                ProgressView()
+                                    .scaleEffect(0.6)
+                                Text(loadingMessages.currentMessage)
+                                    .font(.callout)
+                                    .fontWeight(.medium)
+                                    .lineLimit(2)
                             }
 
                         case .ready, .idle:
