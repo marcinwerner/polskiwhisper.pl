@@ -224,7 +224,7 @@ GDPR/RODO nie mają zastosowania bo nie ma "data controller" - aplikacja nie ma 
 Znalezienie luki bezpieczeństwa, leaku danych, czy network connection nie wymienionego tu = **prośba o zgłoszenie**.
 
 - **Issues**: https://github.com/marcinwerner/polskiwhisper.pl/issues (publiczne)
-- **Email**: marcin@marcinwerner.com (prywatne, dla embargoed disclosures)
+- **Security Advisories**: https://github.com/marcinwerner/polskiwhisper.pl/security/advisories/new (prywatne, dla embargoed disclosures)
 
 Każde zgłoszenie zostanie potraktowane poważnie i z wdzięcznością. Bug fix w terminie 7 dni dla high-severity issues.
 

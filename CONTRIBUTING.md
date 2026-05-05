@@ -98,7 +98,8 @@ Kontrybuując kod do PolskiWhisper, zgadasz się że Twój wkład będzie udost�
 
 ## Kontakt
 
-- **Issues** - dla wszystkiego publicznego
-- **Email** marcin@marcinwerner.com - dla embargoed security disclosures lub komercyjnych pytań
+- **[Issues](https://github.com/marcinwerner/polskiwhisper.pl/issues)** - bug reporty, feature requesty
+- **[Discussions](https://github.com/marcinwerner/polskiwhisper.pl/discussions)** - pytania, sugestie, ogólne
+- **[Security Advisories](https://github.com/marcinwerner/polskiwhisper.pl/security/advisories/new)** - prywatne disclosure luk
 
 Dzięki za pomoc! 🎤

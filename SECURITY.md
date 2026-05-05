@@ -4,7 +4,7 @@
 
 Jeśli odkryjesz lukę bezpieczeństwa w PolskiWhisper, **NIE otwieraj publicznego Issue**.
 
-Zamiast tego napisz na: **marcin@marcinwerner.com**
+Zamiast tego użyj **[GitHub Security Advisories](https://github.com/marcinwerner/polskiwhisper.pl/security/advisories/new)** - prywatny kanał dla zgłoszeń bezpieczeństwa.
 
 W zgłoszeniu uwzględnij:
 - Szczegółowy opis luki

@@ -87,14 +87,12 @@ Pierwszy publiczny release. Aplikacja jest funkcjonalna i stabilna - gotowa do o
 - **Brak auto-update** (Sparkle wymaga code signing)
 - **Brak Intel support** - tylko Apple Silicon (WhisperKit wymaga ANE)
 - **macOS 14+ only** (Sonoma, Sequoia, Tahoe)
-- **Bielik 11B na M1 16GB** dodaje 15-30s do każdego dyktowania (zalecane wyłączenie LLM lub lżejszy model)
+- **Bielik 11B na M1 16GB** dodaje znaczące opóźnienie do dyktowania (zalecane wyłączenie LLM lub lżejszy model jak Llama 3.2 3B / Phi 3.5)
 
 ### Statystyki
-- ~22 plików Swift
-- ~5500 linii kodu
-- ~3000 linii dokumentacji
-- 11 dependencies SPM
+- 27 plików Swift, ~5200 linii kodu
+- 11 dependencies SPM (Swift Package Manager)
 - Build size: ~19 MB unpacked, ~7 MB DMG
-- Whisper model: 547 MB (pobrany przy pierwszym użyciu)
+- Whisper model: 547 MB (pobierany przy pierwszym użyciu z Hugging Face)
 
 [0.1.0]: https://github.com/marcinwerner/polskiwhisper.pl/releases/tag/v0.1.0

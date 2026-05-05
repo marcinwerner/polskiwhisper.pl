@@ -109,5 +109,5 @@ Po instalacji aplikacja działa w pasku menu (ikona mikrofonu w prawym górnym r
 ## Wsparcie
 
 - [GitHub Issues](https://github.com/marcinwerner/polskiwhisper.pl/issues) - bug reporty i feature requesty
+- [GitHub Discussions](https://github.com/marcinwerner/polskiwhisper.pl/discussions) - pytania, sugestie
 - [Polityka prywatności](PRIVACY.md) - zero telemetrii, audytowalny kod
-- Email: marcin@marcinwerner.com

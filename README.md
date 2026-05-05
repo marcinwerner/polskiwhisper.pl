@@ -59,10 +59,11 @@ Pełna instrukcja krok-po-kroku w [docs/INSTALL.md](docs/INSTALL.md), włącznie
         Schowek + auto-paste (Cmd+V) w aktywnej aplikacji
 ```
 
-**Performance** (na MacBook Pro M1 16GB):
-- Mowa 10s → tekst wklejony w **~1.5s**
-- Pierwsza inicjalizacja modelu Whisper: ~3s
-- Z Bielikiem (opcjonalnie): dodaje 15-30s
+**Performance** (zmierzone na MacBook Pro M1 16GB):
+- Whisper transcribe 9s mowy: **~1.5s**
+- Load modelu z cache do RAM: **~1s**
+- Pierwsze pobranie modelu: 1-3 min (zależy od internetu, ~547 MB)
+- Z post-processingiem przez Bielika 11B: znacząco wolniej (na M1 może być nieużywalne, polecam wyłączenie LLM lub lżejszy model)
 
 ## Prywatność (architectural, nie marketingowa)
 
@@ -129,7 +130,6 @@ PolskiWhisper jest budowany na ramieniu olbrzymów. Zobacz [ACKNOWLEDGEMENTS.md]
 
 - 🐛 [GitHub Issues](https://github.com/marcinwerner/polskiwhisper.pl/issues) - bug reporty i feature requesty
 - 💬 [Dyskusje](https://github.com/marcinwerner/polskiwhisper.pl/discussions) - pytania, sugestie
-- 📧 marcin@marcinwerner.com
 
 ---
 
