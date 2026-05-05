@@ -16,98 +16,91 @@ struct AboutTab: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 16) {
+        VStack(spacing: 14) {
+            // Hero - icon + name + version w jednej kolumnie, mniejszy footprint
+            HStack(spacing: 16) {
                 Image(systemName: "mic.fill")
-                    .font(.system(size: 64))
+                    .font(.system(size: 40))
                     .foregroundStyle(.tint)
-                    .padding(.top, 24)
 
-                Text("PolskiWhisper")
-                    .font(.largeTitle)
-                    .fontWeight(.semibold)
-
-                Text("Wersja \(appVersion)")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-
-                Divider().padding(.horizontal, 60)
-
-                VStack(spacing: 8) {
-                    Text("Natywna macOS aplikacja do promptowania głosowego po polsku.")
-                        .multilineTextAlignment(.center)
-                    Text("W pełni offline, otwarte źródło, MIT.")
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.horizontal)
-
-                Divider().padding(.horizontal, 60)
-
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Komponenty open source:")
-                        .font(.headline)
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        ackLink("WhisperKit (Apache 2.0)", url: "https://github.com/argmaxinc/WhisperKit")
-                        ackLink("OpenAI Whisper (MIT)", url: "https://github.com/openai/whisper")
-                        ackLink("LaunchAtLogin-Modern (MIT)", url: "https://github.com/sindresorhus/LaunchAtLogin-Modern")
-                        ackLink("GRDB.swift (MIT)", url: "https://github.com/groue/GRDB.swift")
-                    }
-                    .font(.callout)
-                }
-                .padding(.horizontal, 32)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                Divider().padding(.horizontal, 60)
-
-                HStack(spacing: 16) {
-                    Button("Repo na GitHub") {
-                        open("https://github.com/marcinwerner/polskiwhisper.pl")
-                    }
-                    Button("Polityka prywatności") {
-                        open("https://github.com/marcinwerner/polskiwhisper.pl/blob/main/docs/PRIVACY.md")
-                    }
-                }
-
-                Divider().padding(.horizontal, 60)
-
-                VStack(spacing: 8) {
-                    Text("Konfiguracja")
-                        .font(.headline)
-
-                    HStack(spacing: 12) {
-                        Button("Pokaż onboarding ponownie") {
-                            AppCoordinator.shared.onboardingCompleted = false
-                            OnboardingFlow.shared.show()
-                        }
-                        Button("Resetuj wszystkie ustawienia...") {
-                            confirmAndResetSettings()
-                        }
-                        .foregroundStyle(.red)
-                    }
-                    Text("Reset usuwa wszystkie ustawienia (NIE usuwa słownika ani modeli Whisper).")
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("PolskiWhisper")
+                        .font(.title)
+                        .fontWeight(.semibold)
+                    Text("Wersja \(appVersion) · © 2026 Marcin Werner · MIT")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-
                 Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
 
-                Text("© 2026 Marcin Werner")
+            Text("Natywna macOS aplikacja do promptowania głosowego po polsku. W pełni offline, otwarte źródło.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
+
+            Divider().padding(.horizontal, 40)
+
+            // OSS - inline jako klikalne linki w jednym tekście
+            VStack(spacing: 4) {
+                Text("Zbudowane na:")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                HStack(spacing: 4) {
+                    ossLink("WhisperKit", url: "https://github.com/argmaxinc/WhisperKit")
+                    Text("·").foregroundStyle(.secondary)
+                    ossLink("OpenAI Whisper", url: "https://github.com/openai/whisper")
+                    Text("·").foregroundStyle(.secondary)
+                    ossLink("LaunchAtLogin", url: "https://github.com/sindresorhus/LaunchAtLogin-Modern")
+                    Text("·").foregroundStyle(.secondary)
+                    ossLink("GRDB.swift", url: "https://github.com/groue/GRDB.swift")
+                }
+                .font(.caption)
+            }
+
+            Divider().padding(.horizontal, 40)
+
+            // Akcje - linki + buttons w jednej linii
+            HStack(spacing: 8) {
+                Button("Repo na GitHub") {
+                    open("https://github.com/marcinwerner/polskiwhisper.pl")
+                }
+                Button("Polityka prywatności") {
+                    open("https://github.com/marcinwerner/polskiwhisper.pl/blob/main/docs/PRIVACY.md")
+                }
+                Button("Pokaż onboarding") {
+                    AppCoordinator.shared.onboardingCompleted = false
+                    OnboardingFlow.shared.show()
+                }
+            }
+            .controlSize(.small)
+
+            Divider().padding(.horizontal, 40)
+
+            // Reset - na dole, mniej eksponowane (ostrożność)
+            VStack(spacing: 4) {
+                Button("Resetuj wszystkie ustawienia...") {
+                    confirmAndResetSettings()
+                }
+                .controlSize(.small)
+                .foregroundStyle(.red)
+                Text("Reset NIE usuwa słownika ani modeli Whisper")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .padding(.bottom)
             }
+
+            Spacer(minLength: 0)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     @ViewBuilder
-    private func ackLink(_ label: String, url: String) -> some View {
-        HStack {
-            Text("•")
-            Button(label) { open(url) }
-                .buttonStyle(.link)
-        }
+    private func ossLink(_ label: String, url: String) -> some View {
+        Button(label) { open(url) }
+            .buttonStyle(.link)
     }
 
     private func open(_ url: String) {
@@ -125,14 +118,11 @@ struct AboutTab: View {
         alert.addButton(withTitle: "Anuluj")
 
         if alert.runModal() == .alertFirstButtonReturn {
-            // Usuń wszystkie klucze z UserDefaults dla naszego bundle
             if let bundleID = Bundle.main.bundleIdentifier {
                 UserDefaults.standard.removePersistentDomain(forName: bundleID)
                 UserDefaults.standard.synchronize()
             }
-            // Re-register defaults
             SoundService.registerDefaults()
-            // Pokaż confirmation
             let done = NSAlert()
             done.messageText = "Ustawienia zresetowane"
             done.informativeText = "Aby zmiany weszły w życie, zrestartuj aplikację."
