@@ -26,9 +26,13 @@ final class SettingsWindowController {
     private init() {}
 
     /// Pokazuje okno Ustawień. Jeśli już otwarte - przywołuje na wierzch.
+    /// Obsługuje edge cases: zminimalizowane okno (deminiaturize), inny desktop, w tle.
     func show() {
         if let window {
             NSApp.activate(ignoringOtherApps: true)
+            if window.isMiniaturized {
+                window.deminiaturize(nil)
+            }
             window.makeKeyAndOrderFront(nil)
             return
         }
