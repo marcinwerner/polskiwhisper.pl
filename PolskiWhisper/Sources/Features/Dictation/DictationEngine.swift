@@ -54,6 +54,16 @@ final class DictationEngine {
 
     private var currentRecordingURL: URL?
 
+    /// Auto-spacing state: ostatni paste timestamp + ostatni znak.
+    /// Używane do detekcji "kontynuacji dyktowania" - gdy user nagrywa na raty,
+    /// drugie dyktowanie po kropce dostaje prepend " " żeby nie było "zdanie.Drugie".
+    private var lastPasteAt: Date?
+    private var lastPasteEndedWithTerminator: Bool = false
+
+    /// Próg czasowy "continuation" - po tym czasie zakładamy że user przeniósł
+    /// focus do innego okna/dokumentu i auto-spacing nie ma sensu.
+    private static let continuationWindow: TimeInterval = 60
+
     // MARK: - Init
 
     init(
@@ -202,6 +212,19 @@ final class DictationEngine {
 
         AppCoordinator.shared.phase = .processingWhisper
 
+        // j2: Long-decoding indicator. Whisper Turbo zwykle ~1-2s decoding, ale
+        // przy decoder hell (Custom Words + niski confidence + temperatureFallbackCount)
+        // może zająć 30-90s. Po 5s zmieniamy phase żeby widget pokazał że to NIE freeze.
+        // Task jest cancelled gdy transcribe zwróci wcześniej (przed 5s).
+        let longTask: Task<Void, Never>? = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(5))
+            guard !Task.isCancelled else { return }
+            if case .processingWhisper = AppCoordinator.shared.phase {
+                Log.dictation.info("Whisper decoding > 5s - showing long-running indicator")
+                AppCoordinator.shared.processingTakingLong = true
+            }
+        }
+
         // Pipeline:
         // 1. Whisper transcribe (z initialPrompt z Custom Words)
         // 2. VocabularyProcessor.applyFindReplace
@@ -214,10 +237,13 @@ final class DictationEngine {
                 initialPrompt: initialPrompt
             )
 
+            longTask?.cancel()  // j2: Whisper się skończył - anuluj long-watcher (jeszcze nie odpalił)
+
             guard !rawTranscript.isEmpty else {
                 Log.dictation.warning("Empty transcription - skipping paste")
+                // j3: szybsze dismiss przy empty - nie ma co user'owi czekać
                 AppCoordinator.shared.phase = .completed(transcriptLength: 0)
-                await dismissFloatingWindow(after: 0.5)
+                await dismissFloatingWindow(after: 0.3)
                 audioRecorder.cleanupRecording(at: url)
                 return
             }
@@ -225,7 +251,19 @@ final class DictationEngine {
             Log.dictation.info("Whisper raw: \(rawTranscript.count, privacy: .public) chars")
 
             // 2. Find & Replace
-            let processedText = VocabularyProcessor.applyFindReplace(rawTranscript)
+            var processedText = VocabularyProcessor.applyFindReplace(rawTranscript)
+
+            // 2.5. Auto-spacing: gdy user nagrywa na raty (zdanie kończące się .!?
+            // potem druga transkrypcja), prepend " " żeby uniknąć "zdanie.Drugie".
+            // Window 60s = continuation, dłużej = user pewnie zmienił focus.
+            if let lastTime = lastPasteAt,
+               Date().timeIntervalSince(lastTime) < Self.continuationWindow,
+               lastPasteEndedWithTerminator,
+               let firstChar = processedText.first,
+               !firstChar.isWhitespace {
+                processedText = " " + processedText
+                Log.dictation.info("Auto-spacing: prepended space (continuation after sentence-end)")
+            }
 
             // 3. Paste
             AppCoordinator.shared.phase = .pasting
@@ -245,15 +283,22 @@ final class DictationEngine {
                 }
             }
 
+            // Update auto-spacing state - następny paste w 60s sprawdzi czy prepend space.
+            lastPasteAt = Date()
+            let terminatorChars: Set<Character> = [".", "!", "?"]
+            lastPasteEndedWithTerminator = processedText.last.map { terminatorChars.contains($0) } ?? false
+
             // Cleanup tylko po success paste (lub clipboard fallback)
             audioRecorder.cleanupRecording(at: url)
 
             await dismissFloatingWindow(after: 0.8)
 
         } catch {
+            longTask?.cancel()  // j2: pipeline error - anuluj long-watcher
             Log.dictation.error("Pipeline failed: \(error.localizedDescription, privacy: .public)")
             await setError(error.localizedDescription)
-            await dismissFloatingWindow(after: 4.0)
+            // j3: krótszy delay przy błędzie - 4s było za długo, user już wie że failed
+            await dismissFloatingWindow(after: 2.0)
             // NIE kasujemy WAV przy błędzie - może być potrzebny do retry
         }
     }
@@ -272,5 +317,7 @@ final class DictationEngine {
         // Reset phase to idle po fade out
         try? await Task.sleep(for: .milliseconds(250))
         AppCoordinator.shared.phase = .idle
+        // j2: reset long-running flagi razem z phase
+        AppCoordinator.shared.processingTakingLong = false
     }
 }

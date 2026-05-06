@@ -13,50 +13,20 @@ import UniformTypeIdentifiers
 struct VocabularySettingsTab: View {
 
     @State private var store = VocabularyStore.shared
-    @State private var selectedSection: Section = .customWords
     @State private var importReplace: Bool = false
     @State private var importStatus: String?
 
-    enum Section: String, CaseIterable, Identifiable {
-        case customWords = "Słowa własne"
-        case findReplace = "Znajdź i zamień"
-
-        var id: String { rawValue }
-
-        var description: String {
-            switch self {
-            case .customWords:
-                return "Słowa wstrzykiwane do Whisper jako kontekst (lepsze rozpoznawanie nazw własnych)."
-            case .findReplace:
-                return "Reguły zamiany aplikowane do tekstu po transkrypcji."
-            }
-        }
-    }
-
     var body: some View {
         VStack(spacing: 0) {
-            Picker("Sekcja", selection: $selectedSection) {
-                ForEach(Section.allCases) { section in
-                    Text(section.rawValue).tag(section)
-                }
-            }
-            .pickerStyle(.segmented)
-            .padding()
-
-            Text(selectedSection.description)
+            Text("Reguły zamiany tekstu po transkrypcji - przydatne gdy Whisper rozpoznaje słowo, ale zapisuje je inaczej niż chcesz (np. nazwy firm, imiona).")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal)
+                .padding()
 
             Divider()
 
-            switch selectedSection {
-            case .customWords:
-                CustomWordsView()
-            case .findReplace:
-                FindReplaceView()
-            }
+            FindReplaceView()
 
             Divider()
 
@@ -140,7 +110,17 @@ struct VocabularySettingsTab: View {
     }
 }
 
-// MARK: - Custom Words
+// MARK: - Custom Words (LEGACY - usunięte z UI w v0.1.2)
+//
+// 2026-05-06: Marcin zdecydował wyrzucić zakładkę "Słowa własne" z UI po test sesji.
+// Custom Words wstrzykiwane jako Whisper `promptTokens` powodowały decoder hell + empty
+// output dla rzadkich nazw (np. "Ofertica" → 108s decoding lub instant empty).
+// j1 retry path wprowadzony tego samego dnia chroni paste, ale Custom Words są de facto
+// martwe - zawsze idziemy do retry bez nich.
+//
+// **Ten kod zostaje** (DB schema, API, view) na wypadek gdyby kiedyś okazało się że dla
+// typowych słów (nazwiska, terminy) boost jest realny - łatwy comeback bez migracji.
+// Na razie - niepodpięty pod UI. Tab "Słownik" → tylko Find & Replace.
 
 private struct CustomWordsView: View {
     @State private var store = VocabularyStore.shared
@@ -231,8 +211,10 @@ private struct FindReplaceView: View {
                         .textFieldStyle(.roundedBorder)
                 }
                 HStack {
-                    Toggle("Regex", isOn: $isRegex)
-                    Toggle("Case sensitive", isOn: $caseSensitive)
+                    Toggle("Rozróżniaj wielkie/małe litery", isOn: $caseSensitive)
+                        .help("Włączone: 'tekst' znajdzie tylko 'tekst'. Wyłączone: znajdzie też 'Tekst', 'TEKST'. Zwykle zostaw wyłączone.")
+                    Toggle("Wzorzec zaawansowany", isOn: $isRegex)
+                        .help("Tylko dla programistów - regex (wyrażenia regularne). 99% userów nie potrzebuje. Zostaw wyłączone żeby dosłownie zamieniać tekst.")
                     Spacer()
                     Button("Dodaj regułę", action: add)
                         .disabled(findText.isEmpty)
@@ -255,11 +237,12 @@ private struct FindReplaceView: View {
                             }
                             HStack(spacing: 4) {
                                 if rule.isRegex {
-                                    Text("regex")
+                                    Text("wzorzec")
                                         .font(.caption2)
                                         .padding(.horizontal, 4)
                                         .background(Color.orange.opacity(0.3))
                                         .cornerRadius(3)
+                                        .help("Reguła używa wzorca zaawansowanego (regex)")
                                 }
                                 if rule.caseSensitive {
                                     Text("Aa")
@@ -267,6 +250,7 @@ private struct FindReplaceView: View {
                                         .padding(.horizontal, 4)
                                         .background(Color.blue.opacity(0.3))
                                         .cornerRadius(3)
+                                        .help("Reguła rozróżnia wielkie i małe litery")
                                 }
                             }
                         }

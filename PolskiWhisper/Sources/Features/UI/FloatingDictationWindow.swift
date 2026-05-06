@@ -261,7 +261,8 @@ struct FloatingDictationContent: View {
         case .recording:
             return formatTime(elapsedSeconds)
         case .processingWhisper:
-            return "Tekst"
+            // j2: gdy decoding > 5s (long-running) - info dla user'a że to NIE freeze.
+            return coordinator.processingTakingLong ? "Pracuje..." : "Tekst"
         case .pasting:
             return "..."
         case .completed:

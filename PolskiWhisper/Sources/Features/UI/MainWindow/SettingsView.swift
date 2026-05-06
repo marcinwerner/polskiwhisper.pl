@@ -13,7 +13,7 @@ import SwiftUI
 /// Zakładki (TabView):
 /// - **Ogólne** - autostart, motyw, dźwięki
 /// - **Whisper** - wybór modelu, język
-/// - **Słownictwo** - Custom Words, Find & Replace, AI Vocabulary
+/// - **Słownik** - reguły zamiany tekstu po transkrypcji (Find & Replace)
 /// - **O programie** - wersja, licencje
 struct SettingsView: View {
 
@@ -31,7 +31,7 @@ struct SettingsView: View {
 
             VocabularySettingsTab()
                 .tabItem {
-                    Label("Słownictwo", systemImage: "text.book.closed")
+                    Label("Słownik", systemImage: "text.book.closed")
                 }
 
             AboutTab()

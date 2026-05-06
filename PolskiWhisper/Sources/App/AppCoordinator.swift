@@ -41,6 +41,13 @@ final class AppCoordinator {
 
     var phase: Phase = .idle
 
+    /// j2: Flaga "Whisper transcribing trwa dłużej niż zwykle" (>5s).
+    /// Ustawiana przez DictationEngine po 5s w fazie `.processingWhisper`.
+    /// FloatingDictationWindow obserwuje to i zmienia komunikat (np. "Pracuje...")
+    /// żeby user wiedział że to NIE freeze.
+    /// Resetowana do false przy dismissFloatingWindow (powrót do idle).
+    var processingTakingLong: Bool = false
+
     /// Czy aplikacja zakończyła pierwszy uruchomienie (onboarding).
     /// Persist w UserDefaults pod kluczem `onboardingCompleted`.
     var onboardingCompleted: Bool {

@@ -2,6 +2,34 @@
 
 Format zgodny z [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) + [Semantic Versioning](https://semver.org/lang/pl/).
 
+## [0.1.2] - 2026-05-06
+
+Release naprawowy adresujący krytyczny bug "Custom Words → empty paste" wykryty w produkcji oraz UX improvements zgłoszone podczas testów.
+
+### Naprawione
+
+- **KRYTYCZNY: Custom Words blokowały paste** - dla rzadkich nazw własnych (np. "Ofertica") Whisper z `promptTokens` wpadał w decoder hell (firstTokenLogProbThreshold fallback) i zwracał empty - paste się nie zadziewał. Teraz: jeśli pierwsza próba decoding z Custom Words da empty, automatyczny **retry bez `promptTokens`**. Custom Words działają jako "boost gdy się da", nie "blocker gdy nie".
+- **Hard timeout 30s na transkrypcję** - chroni UX przed decoder hell (zaobserwowane 108s decoding dla 10s nagrania). Po przekroczeniu user dostaje czytelny błąd "Whisper się zaciął - spróbuj ponownie", widget się zamyka, hotkey natychmiast działa.
+- **Widget pokazuje "Pracuje..." przy długim decodingu** - jeśli Whisper przekracza 5s (zwykle 1-2s), zamiast zwykłego "Tekst" pokazujemy "Pracuje..." żeby user wiedział że to NIE freeze. Eliminuje panic-clicking hotkey w trakcie długiego decodingu.
+- **Krótszy delay zamykania widgetu** - przy empty transcription 0.5→0.3s, przy pipeline error 4.0→2.0s. Mniej "wiszącego" widgetu po nieudanej transkrypcji.
+
+### Dodane
+
+- **Auto-spacing po zdaniach** - przy nagrywaniu na raty (zdanie, kropka, drugie zdanie), automatycznie dodajemy spację między dyktowaniami zakończonymi `.!?`. Czyli zamiast "Pierwsze zdanie.Drugie zdanie" → "Pierwsze zdanie. Drugie zdanie". Window 60s = po dłuższym czasie zakładamy że user przeszedł gdzie indziej.
+
+### Zmienione
+
+- **Zakładka "Słownictwo" → "Słownik"** - krótsze, czytelniejsze
+- **Zakładka "Słowa własne" usunięta z UI** - po sesji testowej okazało się że Custom Words są bezużyteczne dla typowych use cases (decoder hell + retry path). Find&Replace pokrywa 100% potrzeb. Kod backend zostaje (DB schema, API) na wypadek comeback - existing userzy z Custom Words wciąż mają boost w tle.
+- **Polskie etykiety w Find&Replace** - "Regex" → "Wzorzec zaawansowany", "Case sensitive" → "Rozróżniaj wielkie/małe litery". Plus tooltips wyjaśniające po polsku. Dla nie-programistów (główna grupa userów polskiej aplikacji).
+- **Lepsze logowanie diagnostyczne** - log `Whisper raw output: X chars (pre-filter, decoding=Ys)` PRZED filtrem halucynacji. Rozróżnia "Whisper sam zwrócił empty" vs "Filter wyciął wszystko" - kluczowe dla user-driven debugowania.
+
+### Skutki dla istniejących userów v0.1.1
+
+- Aktualne dane (Custom Words, Find&Replace, ustawienia, model) **zostają zachowane**
+- Custom Words znikają z UI ale wciąż boost'ują transkrypcję w tle
+- Update mechanism z v0.1.1 wykryje v0.1.2 → modal "Pobierz aktualizację" → user przeciąga DMG do /Applications → SelfUpdateDetector restart
+
 ## [0.1.1] - 2026-05-05
 
 Release naprawowy + nowe features dla update flow. Poprawki bezpieczeństwa,

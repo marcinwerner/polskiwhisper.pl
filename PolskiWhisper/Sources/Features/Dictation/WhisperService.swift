@@ -31,6 +31,7 @@ final class WhisperService {
         case modelNotLoaded
         case modelLoadFailed(underlying: Error)
         case transcriptionFailed(underlying: Error)
+        case transcriptionTimeout(seconds: Int)
         case audioFileMissing(URL)
 
         var errorDescription: String? {
@@ -41,11 +42,18 @@ final class WhisperService {
                 return "Nie udało się załadować modelu Whisper: \(error.localizedDescription)"
             case .transcriptionFailed(let error):
                 return "Transkrypcja nie powiodła się: \(error.localizedDescription)"
+            case .transcriptionTimeout(let seconds):
+                return "Whisper się zaciął - transkrypcja trwała ponad \(seconds)s. Spróbuj ponownie."
             case .audioFileMissing(let url):
                 return "Plik audio nie istnieje: \(url.path)"
             }
         }
     }
+
+    /// Maksymalny czas transkrypcji - po tym timeoutie rzucamy `transcriptionTimeout`.
+    /// Chroni przed decoder hell (zaobserwowane 108s dla 10s nagrania w sesji 2026-05-06).
+    /// 30s = sensible cap dla typowego use case (do ~3min nagrania).
+    private static let transcriptionTimeoutSeconds: Int = 30
 
     // MARK: - Available models
 
@@ -207,7 +215,33 @@ final class WhisperService {
     ///   - audioFileURL: ścieżka do pliku audio (WAV, MP3, M4A - WhisperKit obsługuje większość)
     ///   - initialPrompt: opcjonalny prompt który "boostuje" konkretne słowa (Custom Words feature - Etap 2)
     /// - Returns: transkrybowany tekst (po polsku)
+    /// - Throws: `WhisperError.transcriptionTimeout` gdy decoding > 30s (decoder hell protection)
     func transcribe(audioFileURL: URL, initialPrompt: String? = nil) async throws -> String {
+        // j1 timeout: race transcribe vs sleep(30s). Chroni UX przed decoder hell
+        // (108s zaobserwowane). Po timeout WhisperKit task wciąż może lecieć w tle,
+        // ale user widzi error + widget się zamyka - może natychmiast spróbować ponownie.
+        try await withThrowingTaskGroup(of: String.self) { group in
+            group.addTask { [weak self] in
+                guard let self else { throw WhisperError.modelNotLoaded }
+                return try await self.transcribeImpl(audioFileURL: audioFileURL, initialPrompt: initialPrompt)
+            }
+            group.addTask {
+                try await Task.sleep(for: .seconds(Self.transcriptionTimeoutSeconds))
+                Log.whisper.error("Transcription timeout after \(Self.transcriptionTimeoutSeconds)s - aborting")
+                throw WhisperError.transcriptionTimeout(seconds: Self.transcriptionTimeoutSeconds)
+            }
+
+            guard let result = try await group.next() else {
+                throw WhisperError.transcriptionTimeout(seconds: Self.transcriptionTimeoutSeconds)
+            }
+            group.cancelAll()
+            return result
+        }
+    }
+
+    /// Implementacja transcribe BEZ timeout wrappera (wewnętrzna).
+    /// Public `transcribe()` opakowuje ten call w withThrowingTaskGroup z 30s timeoutem.
+    private func transcribeImpl(audioFileURL: URL, initialPrompt: String?) async throws -> String {
         guard let whisperKit else {
             throw WhisperError.modelNotLoaded
         }
@@ -262,10 +296,67 @@ final class WhisperService {
             )
 
             // Combine results (multi-segment audio może mieć kilka entries)
-            let combinedText = results.map(\.text).joined(separator: " ")
+            var combinedText = results.map(\.text).joined(separator: " ")
                 .trimmingCharacters(in: .whitespacesAndNewlines)
 
+            // j1: Defensive fallback dla Custom Words decoder hell.
+            //
+            // Patologia: Whisper z `promptTokens` (Custom Words jak "Ofertica.pl") czasem
+            // hituje `firstTokenLogProbThreshold` fallback - pierwszy token transkrypcji
+            // ma niski log-prob bo model "myśli" że prompt to już cała odpowiedź. Po 1-2
+            // fallbackach (temperatura 0.2, 0.4) Whisper poddaje się i zwraca empty.
+            //
+            // Fallback: jeśli z promptTokens zwróciło empty → retry BEZ promptTokens.
+            // Lepsze user experience niż zero paste (Custom Words to "boost", nie "filter").
+            // Diagnoza confirmed: 2026-05-06 sesja Marcina (Custom Words "Ofertica" → empty).
+            if combinedText.isEmpty, promptTokens != nil {
+                Log.whisper.warning("""
+                    Empty result with promptTokens (Custom Words decoder hell) - \
+                    retrying WITHOUT promptTokens
+                    """)
+
+                let retryOptions = DecodingOptions(
+                    verbose: false,
+                    task: .transcribe,
+                    language: "pl",
+                    temperature: 0.0,
+                    temperatureFallbackCount: 5,
+                    sampleLength: 224,
+                    topK: 5,
+                    usePrefillPrompt: true,
+                    usePrefillCache: true,
+                    detectLanguage: false,
+                    skipSpecialTokens: true,
+                    withoutTimestamps: true,
+                    wordTimestamps: false,
+                    promptTokens: nil,  // KEY: nil zamiast Custom Words
+                    suppressBlank: true,
+                    supressTokens: nil,
+                    compressionRatioThreshold: 2.4,
+                    logProbThreshold: -1.0,
+                    firstTokenLogProbThreshold: -1.5,
+                    noSpeechThreshold: 0.6
+                )
+
+                let retryResults = try await whisperKit.transcribe(
+                    audioPath: audioFileURL.path,
+                    decodeOptions: retryOptions
+                )
+                combinedText = retryResults.map(\.text).joined(separator: " ")
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+
+                Log.whisper.info("Retry without promptTokens: \(combinedText.count, privacy: .public) chars")
+            }
+
             let duration = Date().timeIntervalSince(startTime)
+
+            // j5: Log raw count PRZED filtrem - rozróżnia "Whisper sam zwrócił empty"
+            // (combinedText.count == 0) vs "Filter wyciął wszystko" (combinedText.count > 0).
+            // Diagnostyka decoder hell + Custom Words + agresywny hallucination filter.
+            Log.whisper.info("""
+                Whisper raw output: \(combinedText.count, privacy: .public) chars \
+                (pre-filter, decoding=\(duration, privacy: .public)s)
+                """)
 
             // Filter halucynacji - Whisper często generuje YT outros gdy audio jest cichy
             let filtered = WhisperHallucinationFilter.filter(combinedText)
