@@ -2,33 +2,31 @@
 
 Format zgodny z [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) + [Semantic Versioning](https://semver.org/lang/pl/).
 
-## [0.1.2] - 2026-05-06
+## [0.1.2] - 2026-05-07
 
-Release naprawowy adresujący krytyczny bug "Custom Words → empty paste" wykryty w produkcji oraz UX improvements zgłoszone podczas testów.
+Kolejna iteracja PolskiWhisper z usprawnieniami zgłoszonymi przez pierwszych użytkowników.
 
-### Naprawione
+### Nowości
 
-- **KRYTYCZNY: Custom Words blokowały paste** - dla rzadkich nazw własnych (np. "Ofertica") Whisper z `promptTokens` wpadał w decoder hell (firstTokenLogProbThreshold fallback) i zwracał empty - paste się nie zadziewał. Teraz: jeśli pierwsza próba decoding z Custom Words da empty, automatyczny **retry bez `promptTokens`**. Custom Words działają jako "boost gdy się da", nie "blocker gdy nie".
-- **Hard timeout 30s na transkrypcję** - chroni UX przed decoder hell (zaobserwowane 108s decoding dla 10s nagrania). Po przekroczeniu user dostaje czytelny błąd "Whisper się zaciął - spróbuj ponownie", widget się zamyka, hotkey natychmiast działa.
-- **Widget pokazuje "Pracuje..." przy długim decodingu** - jeśli Whisper przekracza 5s (zwykle 1-2s), zamiast zwykłego "Tekst" pokazujemy "Pracuje..." żeby user wiedział że to NIE freeze. Eliminuje panic-clicking hotkey w trakcie długiego decodingu.
-- **Krótszy delay zamykania widgetu** - przy empty transcription 0.5→0.3s, przy pipeline error 4.0→2.0s. Mniej "wiszącego" widgetu po nieudanej transkrypcji.
+- **Automatyczne odstępy między zdaniami** - gdy dyktujesz na raty (zdanie, chwila przerwy, kolejne zdanie), aplikacja sama zadba o spację po kropce. Zamiast "Pierwsze zdanie.Drugie zdanie" dostajesz "Pierwsze zdanie. Drugie zdanie".
+- **Lepsze info podczas dłuższych transkrypcji** - jeśli model potrzebuje chwili na większe nagranie, widget pokazuje że pracuje, żeby było wiadomo że wszystko idzie zgodnie z planem.
 
-### Dodane
+### Usprawnienia
 
-- **Auto-spacing po zdaniach** - przy nagrywaniu na raty (zdanie, kropka, drugie zdanie), automatycznie dodajemy spację między dyktowaniami zakończonymi `.!?`. Czyli zamiast "Pierwsze zdanie.Drugie zdanie" → "Pierwsze zdanie. Drugie zdanie". Window 60s = po dłuższym czasie zakładamy że user przeszedł gdzie indziej.
+- **Bardziej niezawodny słownik własny** - aplikacja lepiej radzi sobie z nietypowymi nazwami w słowniku i zawsze dostarcza transkrypcję.
+- **Szybsze zamykanie widgetu** - okienko dyktowania znika natychmiast po zakończeniu nagrywania, bez zbędnego oczekiwania.
+- **Aplikacja sama reaguje gdy coś się przedłuża** - jeśli transkrypcja trwa wyjątkowo długo, aplikacja przyjaźnie wraca do gotowości zamiast czekać w nieskończoność.
 
-### Zmienione
+### Zmiany w interfejsie
 
-- **Zakładka "Słownictwo" → "Słownik"** - krótsze, czytelniejsze
-- **Zakładka "Słowa własne" usunięta z UI** - po sesji testowej okazało się że Custom Words są bezużyteczne dla typowych use cases (decoder hell + retry path). Find&Replace pokrywa 100% potrzeb. Kod backend zostaje (DB schema, API) na wypadek comeback - existing userzy z Custom Words wciąż mają boost w tle.
-- **Polskie etykiety w Find&Replace** - "Regex" → "Wzorzec zaawansowany", "Case sensitive" → "Rozróżniaj wielkie/małe litery". Plus tooltips wyjaśniające po polsku. Dla nie-programistów (główna grupa userów polskiej aplikacji).
-- **Lepsze logowanie diagnostyczne** - log `Whisper raw output: X chars (pre-filter, decoding=Ys)` PRZED filtrem halucynacji. Rozróżnia "Whisper sam zwrócił empty" vs "Filter wyciął wszystko" - kluczowe dla user-driven debugowania.
+- **Zakładka "Słownik"** zamiast "Słownictwo" - krótsza i czytelniejsza nazwa.
+- **Polskie nazwy w słowniku** - "Wzorzec zaawansowany" zamiast "Regex", "Rozróżniaj wielkie i małe litery" zamiast "Case sensitive". Plus podpowiedzi po polsku co która opcja robi.
+- **Uproszczona zakładka słownika** - wszystko w jednym miejscu (Znajdź i zamień). Dla większości użytkowników to wystarcza w 100%. Twoje wcześniejsze wpisy ze starszej zakładki "Słowa własne" wciąż wspomagają rozpoznawanie w tle.
+- **Czytelniejsze logi diagnostyczne** - dla osób debugujących, więcej informacji o tym co Whisper zwraca przed filtrowaniem.
 
-### Skutki dla istniejących userów v0.1.1
+### Aktualizacja z v0.1.1
 
-- Aktualne dane (Custom Words, Find&Replace, ustawienia, model) **zostają zachowane**
-- Custom Words znikają z UI ale wciąż boost'ują transkrypcję w tle
-- Update mechanism z v0.1.1 wykryje v0.1.2 → modal "Pobierz aktualizację" → user przeciąga DMG do /Applications → SelfUpdateDetector restart
+Twój słownik, ustawienia i pobrany model Whisper zostają na miejscu. Pobierz DMG, przeciągnij do Aplikacji - aplikacja sama zauważy nową wersję i zaproponuje restart.
 
 ## [0.1.1] - 2026-05-05
 
