@@ -25,6 +25,11 @@ final class FloatingDictationWindow {
     private var panel: NSPanel?
     private var hostingView: NSHostingView<FloatingDictationContent>?
 
+    /// ESC key monitors - global (gdy nasza app NIE ma fokusa - typowy case)
+    /// + local (gdy MA fokus, np. Settings otwarte). Oba żyją tylko gdy window visible.
+    private var escGlobalMonitor: Any?
+    private var escLocalMonitor: Any?
+
     // MARK: - Public API
 
     /// Czy okno jest aktualnie widoczne.
@@ -62,12 +67,18 @@ final class FloatingDictationWindow {
             panel.animator().alphaValue = 1.0
         }
 
+        // Start ESC monitor - tylko gdy window visible (live-cycle z window).
+        startEscMonitor()
+
         Log.ui.info("FloatingDictationWindow shown")
     }
 
     /// Ukrywa okno z animacją fade out.
     func hide() {
         guard let panel else { return }
+
+        // Stop ESC monitor przed dismiss (życie monitora = życie window).
+        stopEscMonitor()
 
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.2
@@ -81,6 +92,51 @@ final class FloatingDictationWindow {
                 Log.ui.info("FloatingDictationWindow hidden")
             }
         })
+    }
+
+    // MARK: - ESC monitor
+
+    /// Rejestruje global + local NSEvent monitor dla ESC (keyCode 53).
+    /// Tylko gdy window visible - life-cycle z `show()`/`hide()`.
+    /// ESC anuluje **tylko** gdy aktualnie nagrywamy (nie podczas Whisper inference).
+    private func startEscMonitor() {
+        let handler: (NSEvent) -> Void = { event in
+            guard event.keyCode == 53 else { return }  // 53 = Escape
+            Task { @MainActor in
+                guard case .recording = AppCoordinator.shared.phase else { return }
+                await AppCoordinator.shared.dictationEngine?.cancelDictation()
+            }
+        }
+
+        // Global monitor - reaguje gdy nasza aplikacja NIE ma fokusa (typowy case
+        // dla floating widget - user mówi do kursora w innej apce).
+        escGlobalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { event in
+            handler(event)
+        }
+
+        // Local monitor - reaguje gdy MA fokus (np. Settings otwarte).
+        // Local musi zwrócić event lub nil (nil = "consumed", nie idzie dalej).
+        escLocalMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            if event.keyCode == 53 {
+                handler(event)
+                // ESC podczas recording = consume (nie idzie dalej)
+                if case .recording = AppCoordinator.shared.phase {
+                    return nil
+                }
+            }
+            return event
+        }
+    }
+
+    private func stopEscMonitor() {
+        if let monitor = escGlobalMonitor {
+            NSEvent.removeMonitor(monitor)
+            escGlobalMonitor = nil
+        }
+        if let monitor = escLocalMonitor {
+            NSEvent.removeMonitor(monitor)
+            escLocalMonitor = nil
+        }
     }
 
     // MARK: - Private

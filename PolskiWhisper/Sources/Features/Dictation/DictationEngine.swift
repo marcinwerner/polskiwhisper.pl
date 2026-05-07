@@ -97,6 +97,28 @@ final class DictationEngine {
         }
     }
 
+    /// Anuluje nagrywanie - audio file kasujemy, NIC nie wkleja się, widget się zamyka.
+    /// Wywoływane przez ESC podczas fazy `.recording` (NIE podczas Whisper inference).
+    /// Daje user'owi natychmiastowy "abort" gdy zauważy że źle naciska / przeszkodziło coś.
+    func cancelDictation() async {
+        guard case .recording = AppCoordinator.shared.phase else {
+            Log.dictation.warning("cancelDictation called but not in recording phase - ignoring")
+            return
+        }
+
+        Log.dictation.info("Dictation cancelled by user (ESC)")
+
+        // Stop audio + delete file (NIE process)
+        if let url = audioRecorder.stopRecording() {
+            audioRecorder.cleanupRecording(at: url)
+        }
+        currentRecordingURL = nil
+
+        // Cichy dźwięk + dismiss widget (jak silent recording)
+        AppCoordinator.shared.phase = .completed(transcriptLength: 0)
+        await dismissFloatingWindow(after: 0.2)
+    }
+
     /// Preload modelu Whisper w tle (wywołane przez AppCoordinator przy starcie aplikacji).
     /// Dzięki temu pierwszy tap Left Option = instant recording, model gotowy do transcribe.
     func preloadModel() async {

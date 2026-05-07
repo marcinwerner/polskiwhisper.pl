@@ -63,9 +63,9 @@ struct GeneralSettingsTab: View {
 
     var body: some View {
         Form {
-            // Banner gdy dostępna nowa wersja
-            if let update = updateChecker.availableUpdate {
-                Section {
+            // Sekcja aktualizacji - banner + force check button
+            Section("Aktualizacje") {
+                if let update = updateChecker.availableUpdate {
                     HStack(alignment: .top, spacing: 12) {
                         Image(systemName: "arrow.down.circle.fill")
                             .font(.title2)
@@ -84,6 +84,42 @@ struct GeneralSettingsTab: View {
                         .buttonStyle(.borderedProminent)
                     }
                     .padding(.vertical, 4)
+                } else {
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                        Text("Aplikacja jest aktualna (v\(Bundle.main.appVersion))")
+                            .font(.body)
+                    }
+                }
+
+                HStack(spacing: 8) {
+                    Button {
+                        Task { await UpdateChecker.shared.forceCheck() }
+                    } label: {
+                        if updateChecker.isChecking {
+                            HStack(spacing: 6) {
+                                ProgressView().controlSize(.small)
+                                Text("Sprawdzam...")
+                            }
+                        } else {
+                            Label("Sprawdź teraz", systemImage: "arrow.clockwise")
+                        }
+                    }
+                    .disabled(updateChecker.isChecking)
+                    .controlSize(.small)
+
+                    Spacer()
+
+                    if let last = updateChecker.lastCheckedAt {
+                        Text("Ostatnio sprawdzono: \(Self.formatRelative(last))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("Jeszcze nie sprawdzano")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
 
@@ -166,6 +202,15 @@ struct GeneralSettingsTab: View {
         }
         .formStyle(.grouped)
         .padding()
+    }
+
+    /// Formatowanie czasu względnego - "5 min temu", "2 godz. temu", "wczoraj".
+    /// Używane dla "Ostatnio sprawdzono..." pod buttonem aktualizacji.
+    private static func formatRelative(_ date: Date) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.locale = Locale(identifier: "pl_PL")
+        formatter.unitsStyle = .abbreviated
+        return formatter.localizedString(for: date, relativeTo: Date())
     }
 
     /// Grid 3x3 z 9 buttonami - klik = play danego dźwięku.

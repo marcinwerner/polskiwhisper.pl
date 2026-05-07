@@ -183,6 +183,46 @@ final class VocabularyStore {
         try reload()
     }
 
+    /// Update istniejącej reguły F&R (in-place edit).
+    /// Zachowuje orderIndex - kolejność reguł nie zmienia się przy edycji.
+    func updateFindReplaceRule(
+        id: Int64,
+        find: String,
+        replace: String,
+        isRegex: Bool,
+        caseSensitive: Bool
+    ) throws {
+        guard !find.isEmpty else { return }
+        try dbQueue.write { db in
+            try db.execute(
+                sql: """
+                UPDATE find_replace_rule
+                SET findText = ?, replaceWith = ?, isRegex = ?, caseSensitive = ?
+                WHERE id = ?
+                """,
+                arguments: [find, replace, isRegex, caseSensitive, id]
+            )
+        }
+        try reload()
+        Log.vocabulary.info("Updated find&replace rule id=\(id, privacy: .public)")
+    }
+
+    /// Zmienia kolejność reguł F&R - przyjmuje listę ID w nowej kolejności,
+    /// updateuje `orderIndex` zgodnie z pozycją w array.
+    /// Wywoływane po drag-and-drop w UI.
+    func reorderFindReplaceRules(orderedIDs: [Int64]) throws {
+        try dbQueue.write { db in
+            for (index, id) in orderedIDs.enumerated() {
+                try db.execute(
+                    sql: "UPDATE find_replace_rule SET orderIndex = ? WHERE id = ?",
+                    arguments: [index, id]
+                )
+            }
+        }
+        try reload()
+        Log.vocabulary.info("Reordered \(orderedIDs.count, privacy: .public) find&replace rules")
+    }
+
     // MARK: - Eksport / Import (backup + sync między urządzeniami)
 
     /// Eksport słownika do JSON.

@@ -200,6 +200,10 @@ private struct FindReplaceView: View {
     @State private var replaceWith: String = ""
     @State private var isRegex: Bool = false
     @State private var caseSensitive: Bool = false
+    @State private var showAdvanced: Bool = false
+
+    /// Edit mode - jeśli != nil, formularz na górze edytuje regułę zamiast dodawać nową.
+    @State private var editingRuleID: Int64?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -213,69 +217,122 @@ private struct FindReplaceView: View {
                 HStack {
                     Toggle("Rozróżniaj wielkie/małe litery", isOn: $caseSensitive)
                         .help("Włączone: 'tekst' znajdzie tylko 'tekst'. Wyłączone: znajdzie też 'Tekst', 'TEKST'. Zwykle zostaw wyłączone.")
-                    Toggle("Wzorzec zaawansowany", isOn: $isRegex)
-                        .help("Tylko dla programistów - regex (wyrażenia regularne). 99% userów nie potrzebuje. Zostaw wyłączone żeby dosłownie zamieniać tekst.")
+
+                    DisclosureGroup(isExpanded: $showAdvanced) {
+                        Toggle("Wzorzec zaawansowany (regex)", isOn: $isRegex)
+                            .help("Wyrażenia regularne - tylko dla programistów. 99% userów nie potrzebuje. Włącz tylko jeśli wiesz co to jest.")
+                    } label: {
+                        Text("Zaawansowane")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
                     Spacer()
-                    Button("Dodaj regułę", action: add)
-                        .disabled(findText.isEmpty)
+
+                    if editingRuleID != nil {
+                        Button("Anuluj") {
+                            cancelEdit()
+                        }
+                        Button("Zapisz zmiany", action: saveEdit)
+                            .disabled(findText.isEmpty)
+                            .keyboardShortcut(.return)
+                    } else {
+                        Button("Dodaj regułę", action: add)
+                            .disabled(findText.isEmpty)
+                            .keyboardShortcut(.return)
+                    }
                 }
             }
             .padding()
 
+            // Lista reguł z drag-and-drop reorderem (`.onMove`).
+            // Klik na regułę = edit mode (formularz na górze ładuje wartości).
             List {
                 ForEach(store.findReplaceRules) { rule in
-                    HStack {
-                        VStack(alignment: .leading) {
-                            HStack {
-                                Text(rule.findText)
-                                    .font(.system(.body, design: .monospaced))
-                                Image(systemName: "arrow.right")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                Text(rule.replaceWith)
-                                    .font(.system(.body, design: .monospaced))
-                            }
-                            HStack(spacing: 4) {
-                                if rule.isRegex {
-                                    Text("wzorzec")
-                                        .font(.caption2)
-                                        .padding(.horizontal, 4)
-                                        .background(Color.orange.opacity(0.3))
-                                        .cornerRadius(3)
-                                        .help("Reguła używa wzorca zaawansowanego (regex)")
-                                }
-                                if rule.caseSensitive {
-                                    Text("Aa")
-                                        .font(.caption2)
-                                        .padding(.horizontal, 4)
-                                        .background(Color.blue.opacity(0.3))
-                                        .cornerRadius(3)
-                                        .help("Reguła rozróżnia wielkie i małe litery")
-                                }
-                            }
+                    ruleRow(rule)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            startEdit(rule)
                         }
-                        Spacer()
-                        Button {
-                            delete(id: rule.id)
-                        } label: {
-                            Image(systemName: "trash")
-                                .foregroundStyle(.red)
-                        }
-                        .buttonStyle(.borderless)
-                    }
                 }
+                .onMove(perform: moveRules)
             }
 
-            HStack {
+            HStack(spacing: 12) {
                 Text("\(store.findReplaceRules.count) reguł")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+                if store.findReplaceRules.count > 1 {
+                    Text("·")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text("Klik = edycja, przeciągnij = zmień kolejność")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
                 Spacer()
             }
             .padding(.horizontal)
             .padding(.bottom, 8)
         }
     }
+
+    // MARK: - Subviews
+
+    @ViewBuilder
+    private func ruleRow(_ rule: VocabularyStore.FindReplaceRule) -> some View {
+        HStack {
+            VStack(alignment: .leading) {
+                HStack {
+                    Text(rule.findText)
+                        .font(.system(.body, design: .monospaced))
+                    Image(systemName: "arrow.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(rule.replaceWith)
+                        .font(.system(.body, design: .monospaced))
+                }
+                HStack(spacing: 4) {
+                    if rule.isRegex {
+                        Text("wzorzec")
+                            .font(.caption2)
+                            .padding(.horizontal, 4)
+                            .background(Color.orange.opacity(0.3))
+                            .cornerRadius(3)
+                            .help("Reguła używa wzorca zaawansowanego (regex)")
+                    }
+                    if rule.caseSensitive {
+                        Text("Aa")
+                            .font(.caption2)
+                            .padding(.horizontal, 4)
+                            .background(Color.blue.opacity(0.3))
+                            .cornerRadius(3)
+                            .help("Reguła rozróżnia wielkie i małe litery")
+                    }
+                    if editingRuleID == rule.id {
+                        Text("EDYTOWANA")
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                            .padding(.horizontal, 4)
+                            .background(Color.yellow.opacity(0.3))
+                            .cornerRadius(3)
+                    }
+                }
+            }
+            Spacer()
+            Button {
+                delete(id: rule.id)
+            } label: {
+                Image(systemName: "trash")
+                    .foregroundStyle(.red)
+            }
+            .buttonStyle(.borderless)
+        }
+    }
+
+    // MARK: - Actions
 
     private func add() {
         try? store.addFindReplaceRule(
@@ -284,15 +341,60 @@ private struct FindReplaceView: View {
             isRegex: isRegex,
             caseSensitive: caseSensitive
         )
-        findText = ""
-        replaceWith = ""
-        isRegex = false
-        caseSensitive = false
+        clearForm()
     }
 
     private func delete(id: Int64?) {
         guard let id else { return }
+        // Jeśli kasujemy regułę którą edytujemy, anuluj edit
+        if editingRuleID == id {
+            cancelEdit()
+        }
         try? store.deleteFindReplaceRule(id: id)
+    }
+
+    private func startEdit(_ rule: VocabularyStore.FindReplaceRule) {
+        editingRuleID = rule.id
+        findText = rule.findText
+        replaceWith = rule.replaceWith
+        isRegex = rule.isRegex
+        caseSensitive = rule.caseSensitive
+        // Auto-expand "Zaawansowane" jeśli reguła używa regex
+        if rule.isRegex {
+            showAdvanced = true
+        }
+    }
+
+    private func saveEdit() {
+        guard let id = editingRuleID else { return }
+        try? store.updateFindReplaceRule(
+            id: id,
+            find: findText,
+            replace: replaceWith,
+            isRegex: isRegex,
+            caseSensitive: caseSensitive
+        )
+        clearForm()
+    }
+
+    private func cancelEdit() {
+        clearForm()
+    }
+
+    private func clearForm() {
+        editingRuleID = nil
+        findText = ""
+        replaceWith = ""
+        isRegex = false
+        caseSensitive = false
+        showAdvanced = false
+    }
+
+    private func moveRules(from source: IndexSet, to destination: Int) {
+        var rules = store.findReplaceRules
+        rules.move(fromOffsets: source, toOffset: destination)
+        let orderedIDs = rules.compactMap { $0.id }
+        try? store.reorderFindReplaceRules(orderedIDs: orderedIDs)
     }
 }
 

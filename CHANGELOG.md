@@ -2,6 +2,31 @@
 
 Format zgodny z [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) + [Semantic Versioning](https://semver.org/lang/pl/).
 
+## [0.1.4] - 2026-05-08
+
+Większa kontrola nad aplikacją - sprawdzanie aktualizacji jednym kliknięciem, anulowanie nagrania klawiszem Escape, prostszy i bardziej intuicyjny słownik.
+
+### Nowości
+
+- **Przycisk "Sprawdź teraz"** w sekcji Aktualizacje - kliknij, żeby od razu sprawdzić czy jest nowa wersja, bez czekania na automatyczne sprawdzenie co 24h. Pokazujemy też kiedy ostatnio sprawdzaliśmy.
+- **Klawisz Escape anuluje nagrywanie** - jeśli zaczniesz nagrywać i zorientujesz się że nie chcesz, naciśnij Esc i widget zniknie bez wklejania tekstu. Działa zarówno gdy aplikacja jest aktywna, jak i w tle.
+- **Edycja reguł słownika** - klik na regułę w "Znajdź i zamień" otwiera ją do edycji. Wcześniej można było tylko usunąć i dodać nową.
+- **Zmiana kolejności reguł przeciągnięciem** - kolejność reguł ma znaczenie (są aplikowane jedna po drugiej). Teraz przeciągnij regułę w górę lub dół, żeby zmienić kolejność.
+
+### Usprawnienia
+
+- **Automatyczne ładowanie wybranego modelu** - wybierasz model Whisper z listy i od razu się ładuje. Jeśli model nie jest pobrany, aplikacja zapyta przed pobraniem (z informacją o rozmiarze).
+- **Czytelniejsze ikony przy modelach Whisper** - zielona strzałka w prawo dla modeli pobranych (gotowe do wyboru), szara strzałka w dół dla niepobranych (pobierze przy wyborze).
+- **Mniej zbędnych elementów** - usunięto przycisk "Załaduj model" (auto-load go zastępuje) oraz statyczną listę modeli pod listą rozwijaną (była duplikacja).
+
+### Zmiany w słowniku
+
+- **Sekcja "Zaawansowane"** w słowniku - opcja "Wzorzec zaawansowany (regex)" jest schowana pod rozwijanym przyciskiem. 99% użytkowników nigdy go nie potrzebuje, więc nie powinien rozpraszać. Zaawansowani użytkownicy klikają "Zaawansowane" żeby go odsłonić.
+
+### Aktualizacja z v0.1.3
+
+Twój słownik, ustawienia i pobrany model Whisper zostają na miejscu. Wszystkie nowe funkcje są dostępne od razu po aktualizacji - bez dodatkowej konfiguracji.
+
 ## [0.1.3] - 2026-05-08
 
 Drobne dopracowanie ustawień - więcej kontroli nad dźwiękami, mniej zbędnych przełączników.

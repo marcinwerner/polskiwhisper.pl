@@ -20,6 +20,10 @@ struct WhisperSettingsTab: View {
     @State private var modelToCleanup: WhisperService.Model?
     @State private var modelToCleanupSize: Int64 = 0
 
+    /// Dialog potwierdzenia pobierania niepobranego modelu po wyborze w pickerze.
+    /// Auto-load TYLKO dla pobranych modeli - duże downloadowanie wymaga zgody.
+    @State private var modelToDownloadConfirm: WhisperService.Model?
+
     private var whisperService: WhisperService? {
         coordinator.dictationEngine?.whisperService
     }
@@ -62,9 +66,10 @@ struct WhisperSettingsTab: View {
                 Picker("Model:", selection: $selectedModel) {
                     ForEach(WhisperService.Model.allCases) { model in
                         HStack {
-                            // Symbol stanu pobrania
+                            // Kolorowe strzałki: zielona w prawo dla pobranych (gotowe do wyboru),
+                            // szara w dół dla niepobranych (pobierze przy wyborze).
                             if WhisperService.isModelDownloaded(model) {
-                                Image(systemName: "checkmark.circle.fill")
+                                Image(systemName: "arrow.right.circle.fill")
                                     .foregroundStyle(.green)
                             } else {
                                 Image(systemName: "arrow.down.circle")
@@ -77,36 +82,6 @@ struct WhisperSettingsTab: View {
                 }
                 .pickerStyle(.menu)
                 .disabled(isChangingModel)
-
-                // Lista wszystkich modeli z statusem (poniżej pickera dla jasności)
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(WhisperService.Model.allCases) { model in
-                        HStack(spacing: 6) {
-                            if WhisperService.isModelDownloaded(model) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundStyle(.green)
-                                    .font(.caption)
-                                Text("Pobrany")
-                                    .font(.caption2)
-                                    .foregroundStyle(.green)
-                            } else {
-                                Image(systemName: "arrow.down.circle")
-                                    .foregroundStyle(.secondary)
-                                    .font(.caption)
-                                Text("Nie pobrany")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                            Text("·")
-                                .foregroundStyle(.secondary)
-                                .font(.caption2)
-                            Text(model.displayName)
-                                .font(.caption2)
-                                .foregroundStyle(model == selectedModel ? .primary : .secondary)
-                        }
-                    }
-                }
-                .padding(.vertical, 4)
 
                 // Progress bar gdy pobieranie/ładowanie trwa.
                 // Rozróżniamy 2 fazy: download (rzeczywisty progress 0-100%) vs
@@ -150,24 +125,6 @@ struct WhisperSettingsTab: View {
                     .padding(.vertical, 4)
                 }
 
-                Button {
-                    Task { await changeModel() }
-                } label: {
-                    if isChangingModel {
-                        HStack {
-                            ProgressView().scaleEffect(0.6)
-                            Text("Pobieranie/ładowanie...")
-                        }
-                    } else if WhisperService.isModelDownloaded(selectedModel) && selectedModel != whisperService?.loadedModel {
-                        Text("Załaduj wybrany model")
-                    } else if !WhisperService.isModelDownloaded(selectedModel) {
-                        Text("Pobierz i załaduj wybrany model")
-                    } else {
-                        Text("Wybrany model jest już aktywny")
-                    }
-                }
-                .disabled(isChangingModel || selectedModel == whisperService?.loadedModel)
-
                 if let error = loadError {
                     Text("Błąd: \(error)")
                         .font(.caption)
@@ -175,9 +132,9 @@ struct WhisperSettingsTab: View {
                 }
 
                 Text("""
-                    Modele są pobierane z Hugging Face przy pierwszym wyborze i zapisywane w \
-                    `~/Documents/huggingface/models/argmaxinc/whisperkit-coreml/`. \
-                    Każdy model można usunąć ręcznie z tego folderu aby zwolnić miejsce.
+                    Wybranie modelu z listy automatycznie go ładuje. Modele pobrane (zielona strzałka) \
+                    aktywują się natychmiast. Modele niepobrane (szara strzałka) wymagają potwierdzenia \
+                    pobierania - aplikacja zapyta przed downloadem.
                     """)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -189,6 +146,44 @@ struct WhisperSettingsTab: View {
             if let loaded = whisperService?.loadedModel {
                 selectedModel = loaded
             }
+        }
+        .onChange(of: selectedModel) { _, newValue in
+            // Auto-load po wyborze modelu (Wave 2).
+            // Niepobrane modele wymagają confirm (download MB-GB).
+            guard !isChangingModel else { return }
+            guard newValue != whisperService?.loadedModel else { return }
+
+            if WhisperService.isModelDownloaded(newValue) {
+                Task { await changeModel() }
+            } else {
+                modelToDownloadConfirm = newValue
+            }
+        }
+        .alert(
+            "Pobrać model?",
+            isPresented: Binding(
+                get: { modelToDownloadConfirm != nil },
+                set: { if !$0 { modelToDownloadConfirm = nil } }
+            ),
+            presenting: modelToDownloadConfirm
+        ) { model in
+            Button("Pobierz \(formatBytes(model.approximateBytes))") {
+                modelToDownloadConfirm = nil
+                Task { await changeModel() }
+            }
+            Button("Anuluj", role: .cancel) {
+                modelToDownloadConfirm = nil
+                // Revert selection do aktualnie załadowanego modelu
+                if let loaded = whisperService?.loadedModel {
+                    selectedModel = loaded
+                }
+            }
+        } message: { model in
+            Text("""
+                Model \(model.displayName) nie jest jeszcze pobrany.
+
+                Pobranie zajmuje około \(formatBytes(model.approximateBytes)) i wymaga połączenia z internetem. Po pobraniu zostanie automatycznie aktywowany.
+                """)
         }
         .alert(
             "Usunąć poprzedni model?",
