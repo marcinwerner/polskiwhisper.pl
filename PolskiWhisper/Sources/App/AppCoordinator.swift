@@ -191,8 +191,9 @@ final class AppCoordinator {
         static let selectedWhisperModel = "selectedWhisperModel"
         static let hotkeyMode = "hotkeyMode" // "toggle" | "hold"
         static let selectedHotkey = "selectedHotkey"
-        static let autoPaste = "autoPaste"
         static let playSounds = "playSounds"
+        static let selectedStartSound = "selectedStartSound"  // SoundService.SoundChoice rawValue
+        static let selectedFinishSound = "selectedFinishSound"
         static let floatingWindowPosition = "floatingWindowPosition"
         static let launchAtLogin = "launchAtLogin"
         static let maxRecordingDuration = "maxRecordingDurationSeconds"

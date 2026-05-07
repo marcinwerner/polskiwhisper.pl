@@ -11,9 +11,10 @@ import SwiftUI
 
 struct GeneralSettingsTab: View {
 
-    @AppStorage(AppCoordinator.Keys.autoPaste) private var autoPaste: Bool = true
-    @AppStorage(AppCoordinator.Keys.playSounds) private var playSounds: Bool = false
+    @AppStorage(AppCoordinator.Keys.playSounds) private var playSounds: Bool = true
     @AppStorage(AppCoordinator.Keys.maxRecordingDuration) private var maxDuration: Double = 300
+    @AppStorage(AppCoordinator.Keys.selectedStartSound) private var selectedStartSoundRaw: String = SoundService.SoundChoice.pop.rawValue
+    @AppStorage(AppCoordinator.Keys.selectedFinishSound) private var selectedFinishSoundRaw: String = SoundService.SoundChoice.tink.rawValue
 
     // @AppStorage dla reactive UI - custom Binding z AppCoordinator getterem
     // NIE jest observable przez SwiftUI (UserDefaults read nie triggeruje view update).
@@ -96,11 +97,6 @@ struct GeneralSettingsTab: View {
             }
 
             Section("Dyktowanie") {
-                Toggle("Automatyczne wklejanie (Cmd+V)", isOn: $autoPaste)
-                Text("Gdy wyłączone - tekst trafi do schowka, wklej ręcznie.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
                 Picker("Maksymalny czas nagrywania:", selection: $maxDuration) {
                     ForEach(Self.durationOptions, id: \.seconds) { option in
                         Text(option.label).tag(option.seconds)
@@ -111,22 +107,36 @@ struct GeneralSettingsTab: View {
                 Text("Po przekroczeniu limitu nagrywanie zatrzyma się automatycznie. \"Bez limitu\" = nagrywaj do tap stop.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
 
-                Toggle("Dźwięki rozpoczęcia i zakończenia", isOn: $playSounds)
-                Text("Subtelny \"Pop\" przy starcie nagrywania, \"Tink\" przy wklejeniu tekstu. Używa systemowych dźwięków macOS.")
+            Section("Dźwięki") {
+                Toggle("Odtwarzaj dźwięki przy nagrywaniu", isOn: $playSounds)
+                Text("Subtelny sygnał gdy zaczynasz i kończysz nagrywanie. Używa systemowych dźwięków macOS.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                HStack(spacing: 8) {
-                    Button("Test start") {
-                        SoundService.playStartTest()
+                Text("Posłuchaj dostępnych dźwięków:")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 4)
+
+                soundTestGrid
+
+                Picker("Dźwięk rozpoczęcia:", selection: $selectedStartSoundRaw) {
+                    ForEach(SoundService.SoundChoice.allCases) { choice in
+                        Text(choice.displayName).tag(choice.rawValue)
                     }
-                    .controlSize(.small)
-                    Button("Test stop") {
-                        SoundService.playFinishTest()
-                    }
-                    .controlSize(.small)
                 }
+                .pickerStyle(.menu)
+                .disabled(!playSounds)
+
+                Picker("Dźwięk zakończenia:", selection: $selectedFinishSoundRaw) {
+                    ForEach(SoundService.SoundChoice.allCases) { choice in
+                        Text(choice.displayName).tag(choice.rawValue)
+                    }
+                }
+                .pickerStyle(.menu)
+                .disabled(!playSounds)
             }
 
             Section("Skrót klawiszowy") {
@@ -156,5 +166,30 @@ struct GeneralSettingsTab: View {
         }
         .formStyle(.grouped)
         .padding()
+    }
+
+    /// Grid 3x3 z 9 buttonami - klik = play danego dźwięku.
+    /// Pomaga user'owi wybrać który dźwięk preferuje przed ustawieniem w Picker.
+    private var soundTestGrid: some View {
+        let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
+        return LazyVGrid(columns: columns, spacing: 8) {
+            ForEach(SoundService.SoundChoice.allCases) { choice in
+                Button {
+                    SoundService.playTest(choice)
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "play.circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.tint)
+                        Text(choice.rawValue)
+                            .font(.caption)
+                            .lineLimit(1)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 4)
+                }
+                .controlSize(.small)
+            }
+        }
     }
 }

@@ -2,6 +2,23 @@
 
 Format zgodny z [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) + [Semantic Versioning](https://semver.org/lang/pl/).
 
+## [0.1.3] - 2026-05-08
+
+Drobne dopracowanie ustawień - więcej kontroli nad dźwiękami, mniej zbędnych przełączników.
+
+### Nowości
+
+- **Wybór dźwięku rozpoczęcia i zakończenia** - osobno dla każdego zdarzenia z 9 dostępnych opcji systemowych macOS (Pop, Tink, Glass, Ping, Bottle, Purr, Hero, Submarine, Blow). Klikasz przycisk z nazwą dźwięku żeby go posłuchać, potem wybierasz preferowany z listy rozwijanej.
+
+### Zmiany w interfejsie
+
+- **Uproszczona sekcja Dyktowania** - usunięty przełącznik "Automatyczne wklejanie" (i tak zawsze włączony - to istota aplikacji).
+- **Nowa sekcja Dźwięki** w Ustawieniach Ogólnych - jasno wydzielona, z gridem testowym i osobnymi listami wyboru dla startu i zakończenia.
+
+### Aktualizacja z v0.1.2
+
+Twoje ustawienia, słownik i pobrany model Whisper zostają na miejscu. Domyślne dźwięki (Pop dla startu, Tink dla zakończenia) zachowują dotychczasowe zachowanie - jeśli nic nie zmienisz, aplikacja brzmi jak wcześniej.
+
 ## [0.1.2] - 2026-05-07
 
 Kolejna iteracja PolskiWhisper z usprawnieniami zgłoszonymi przez pierwszych użytkowników.
