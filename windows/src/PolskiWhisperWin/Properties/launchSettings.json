@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "PolskiWhisperWin": {
+      "commandName": "Project",
+      "nativeDebugging": false
+    }
+  }
+}

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  PolskiWhisperWin - WiX 4 installer definition.
+  Copyright © 2026 Marcin Werner. Licensed under the MIT License.
+
+  Build:
+    wix build installer/PolskiWhisperWin.wxs -define Version=0.1.0 -define PublishDir=publish/win-x64 -define Platform=win-x64
+
+  Result:
+    Per-user MSI (HKCU only - bez UAC). Instaluje aplikację w %LOCALAPPDATA%\Programs\PolskiWhisper.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+    <Package Name="PolskiWhisper"
+             Manufacturer="Marcin Werner"
+             Version="$(Version).0"
+             UpgradeCode="A1B2C3D4-1111-2222-3333-444455556666"
+             Scope="perUser"
+             InstallerVersion="500">
+
+        <SummaryInformation Description="PolskiWhisper - dyktowanie głosowe po polsku"
+                            Manufacturer="Marcin Werner" />
+
+        <MajorUpgrade DowngradeErrorMessage="Nowsza wersja PolskiWhisper jest już zainstalowana."
+                      AllowSameVersionUpgrades="yes" />
+
+        <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+        <!-- Properties dla customization. -->
+        <Property Id="ARPHELPLINK" Value="https://github.com/marcinwerner/polskiwhisper.pl" />
+        <Property Id="ARPURLINFOABOUT" Value="https://polskiwhisper.pl" />
+        <Property Id="ARPNOMODIFY" Value="1" />
+        <Property Id="ARPNOREPAIR" Value="1" />
+
+        <!-- Per-user install dir = %LOCALAPPDATA%\Programs\PolskiWhisper. -->
+        <StandardDirectory Id="LocalAppDataFolder">
+            <Directory Id="ProgramsFolder" Name="Programs">
+                <Directory Id="INSTALLFOLDER" Name="PolskiWhisper" />
+            </Directory>
+        </StandardDirectory>
+
+        <!-- Start Menu shortcut. -->
+        <StandardDirectory Id="ProgramMenuFolder">
+            <Directory Id="ApplicationProgramsFolder" Name="PolskiWhisper" />
+        </StandardDirectory>
+
+        <!-- Komponenty - publish folder zostanie zbindowany w build time przez heat. -->
+        <ComponentGroup Id="ApplicationFiles" Directory="INSTALLFOLDER">
+            <Files Include="$(PublishDir)\**" />
+        </ComponentGroup>
+
+        <Component Id="ApplicationShortcuts" Directory="ApplicationProgramsFolder" Guid="B7AB12CD-3344-5566-7788-99AABBCCDDEE">
+            <Shortcut Id="StartMenuShortcut"
+                      Name="PolskiWhisper"
+                      Description="Dyktowanie głosowe po polsku"
+                      Target="[INSTALLFOLDER]PolskiWhisper.exe"
+                      WorkingDirectory="INSTALLFOLDER" />
+            <RemoveFolder Id="CleanupShortcutFolder" On="uninstall" />
+            <RegistryValue Root="HKCU"
+                           Key="Software\PolskiWhisper"
+                           Name="installed"
+                           Type="integer"
+                           Value="1"
+                           KeyPath="yes" />
+        </Component>
+
+        <Component Id="ApplicationStartMenuShortcut" Directory="ApplicationProgramsFolder" Guid="C7DE45F6-7890-AABB-CCDD-EE0011223344">
+            <util:RemoveFolderEx xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util"
+                                 On="uninstall"
+                                 Property="INSTALLFOLDER" />
+            <RegistryValue Root="HKCU"
+                           Key="Software\PolskiWhisper"
+                           Name="version"
+                           Type="string"
+                           Value="$(Version)"
+                           KeyPath="yes" />
+        </Component>
+
+        <Feature Id="DefaultFeature" Title="PolskiWhisper" Level="1">
+            <ComponentGroupRef Id="ApplicationFiles" />
+            <ComponentRef Id="ApplicationShortcuts" />
+            <ComponentRef Id="ApplicationStartMenuShortcut" />
+        </Feature>
+
+        <!-- WiX UI - WixUI_Minimal (jedna strona z licencją). -->
+        <ui:WixUI Id="WixUI_Minimal" />
+
+    </Package>
+</Wix>

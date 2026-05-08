@@ -2,6 +2,16 @@
 
 Format zgodny z [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) + [Semantic Versioning](https://semver.org/lang/pl/).
 
+> **Windows**: Wersja Windows ma osobny [CHANGELOG.md](windows/CHANGELOG.md) i własne tagi (`win-vX.Y.Z`). Numeracja niezależna - nie musi być zsynchronizowana z macOS.
+
+## [Windows v0.1.0] - Wstępna wersja Windows (2026-05-08)
+
+Pierwsza wersja PolskiWhisper na Windows - port z macOS w pełnej parze funkcji. Stack: **WinUI 3 + C# + Whisper.net + .NET 8**.
+
+Pełna parytet: dyktowanie po polsku, hotkey toggle/hold, Esc cancel, auto-spacing, 9 dźwięków, słownik z drag-and-drop, hallucination filter, auto-update one-click, DuplicateAppFinder, Toast notifications, onboarding wizard, launch at login, GPU acceleration (DirectML).
+
+Szczegóły: [windows/CHANGELOG.md](windows/CHANGELOG.md). Architektura: [windows/docs/ARCHITECTURE.md](windows/docs/ARCHITECTURE.md).
+
 ## [0.1.5] - 2026-05-08
 
 Aktualizacje są teraz proste. Jeden klik pobiera i instaluje nową wersję, aplikacja sprząta po sobie, a opcjonalnie sama dba o świeżość bez Twojej ingerencji.

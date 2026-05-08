@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="PolskiWhisperWin.Features.UI.Pages.VocabularySettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markupcompatibility/2006"
+    xmlns:models="using:PolskiWhisperWin.Core.Models"
+    xmlns:vm="using:PolskiWhisperWin.Features.UI.Pages"
+    mc:Ignorable="d">
+
+    <Grid Padding="32,16,32,32">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="Słownik - znajdź i zamień"
+                   FontSize="24"
+                   FontWeight="SemiBold" />
+
+        <TextBlock Grid.Row="1"
+                   Margin="0,8,0,16"
+                   TextWrapping="Wrap"
+                   Opacity="0.85"
+                   Text="Reguły są stosowane sekwencyjnie do tekstu po transkrypcji Whisper. Przeciągnij aby zmienić kolejność." />
+
+        <!-- Add new rule -->
+        <Border Grid.Row="2" Padding="16" Margin="0,0,0,16"
+                CornerRadius="8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1">
+            <Grid ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBox x:Name="FindTextBox"
+                         Grid.Column="0"
+                         PlaceholderText="Co znaleźć (np. ofertika)"
+                         KeyDown="OnNewRuleKeyDown" />
+
+                <TextBox x:Name="ReplaceTextBox"
+                         Grid.Column="1"
+                         PlaceholderText="Czym zamienić (np. Ofertica)"
+                         KeyDown="OnNewRuleKeyDown" />
+
+                <Button x:Name="AddRuleButton"
+                        Grid.Column="2"
+                        Content="Dodaj regułę"
+                        Click="AddRuleButton_Click" />
+            </Grid>
+        </Border>
+
+        <!-- Rules list with drag-and-drop reordering -->
+        <ListView x:Name="RulesListView"
+                  Grid.Row="3"
+                  CanReorderItems="True"
+                  AllowDrop="True"
+                  SelectionMode="Single">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    <Setter Property="Padding" Value="0" />
+                    <Setter Property="Margin" Value="0,2,0,2" />
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="models:FindReplaceRule">
+                    <Grid Padding="12" ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <FontIcon Grid.Column="0"
+                                  Glyph="&#xE76F;"
+                                  FontSize="14"
+                                  Opacity="0.5"
+                                  ToolTipService.ToolTip="Przeciągnij aby zmienić kolejność" />
+
+                        <TextBlock Grid.Column="1"
+                                   Text="{x:Bind FindText}"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center" />
+
+                        <FontIcon Grid.Column="2"
+                                  Glyph="&#xE76C;"
+                                  FontSize="12"
+                                  VerticalAlignment="Center"
+                                  Opacity="0.7" />
+
+                        <TextBlock Grid.Column="3"
+                                   Text="{x:Bind ReplaceWith}"
+                                   VerticalAlignment="Center" />
+
+                        <StackPanel Grid.Column="4"
+                                    Orientation="Horizontal"
+                                    Spacing="4"
+                                    VerticalAlignment="Center">
+                            <Border CornerRadius="4" Padding="4,2,4,2"
+                                    Background="{ThemeResource SubtleFillColorTertiaryBrush}"
+                                    Visibility="{x:Bind IsRegex}">
+                                <TextBlock Text="Regex" FontSize="10" />
+                            </Border>
+                            <Border CornerRadius="4" Padding="4,2,4,2"
+                                    Background="{ThemeResource SubtleFillColorTertiaryBrush}"
+                                    Visibility="{x:Bind CaseSensitive}">
+                                <TextBlock Text="Aa" FontSize="10" />
+                            </Border>
+                        </StackPanel>
+
+                        <Button Grid.Column="5"
+                                Style="{ThemeResource SubtleButtonStyle}"
+                                Width="32"
+                                Height="32"
+                                Padding="0"
+                                Click="DeleteRuleButton_Click"
+                                Tag="{x:Bind Id}"
+                                ToolTipService.ToolTip="Usuń">
+                            <FontIcon Glyph="&#xE74D;" FontSize="14" />
+                        </Button>
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </Grid>
+</Page>

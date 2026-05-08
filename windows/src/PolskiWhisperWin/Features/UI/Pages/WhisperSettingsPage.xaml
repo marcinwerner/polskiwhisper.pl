@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="PolskiWhisperWin.Features.UI.Pages.WhisperSettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markupcompatibility/2006"
+    xmlns:models="using:PolskiWhisperWin.Core.Models"
+    mc:Ignorable="d">
+
+    <ScrollViewer Padding="32,16,32,32">
+        <StackPanel Spacing="16" MaxWidth="800" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Whisper - silnik rozpoznawania mowy"
+                       FontSize="24"
+                       FontWeight="SemiBold" />
+
+            <TextBlock TextWrapping="Wrap" Opacity="0.85"
+                       Text="Wybierz model Whisper. Większe modele dają lepszą jakość, ale są wolniejsze i zajmują więcej miejsca." />
+
+            <ListView x:Name="ModelsListView"
+                      SelectionMode="Single"
+                      SelectionChanged="ModelsListView_SelectionChanged">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="Padding" Value="0" />
+                        <Setter Property="Margin" Value="0,4,0,4" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="models:WhisperModelInfo">
+                        <Border Padding="16"
+                                CornerRadius="8"
+                                BorderThickness="1"
+                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Spacing="4">
+                                    <TextBlock Text="{x:Bind DisplayName}"
+                                               FontWeight="SemiBold"
+                                               FontSize="14" />
+                                    <TextBlock Text="{x:Bind Identifier}"
+                                               Opacity="0.6"
+                                               FontSize="12" />
+                                </StackPanel>
+
+                                <FontIcon Grid.Column="1"
+                                          x:Name="StatusIcon"
+                                          FontSize="20"
+                                          Glyph="&#xE73E;"
+                                          Foreground="Gray"
+                                          ToolTipService.ToolTip="Niepobrany - zostanie pobrany przy wyborze" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <ProgressBar x:Name="LoadProgressBar"
+                         Visibility="Collapsed"
+                         IsIndeterminate="False" />
+
+            <TextBlock x:Name="LoadStatusText"
+                       Text=""
+                       Visibility="Collapsed"
+                       Opacity="0.85" />
+
+            <Border Margin="0,16,0,0" Padding="16"
+                    CornerRadius="8"
+                    Background="{ThemeResource SubtleFillColorTertiaryBrush}">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Informacje o modelu" FontWeight="SemiBold" />
+                    <TextBlock TextWrapping="Wrap" Opacity="0.85">
+                        Modele są pobierane z Hugging Face przy pierwszym wyborze. Są zapisywane w
+                        <Run FontFamily="Consolas">%LOCALAPPDATA%\PolskiWhisper\models\</Run>.
+                        Możesz je usunąć ręcznie aby zwolnić miejsce.
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</Page>

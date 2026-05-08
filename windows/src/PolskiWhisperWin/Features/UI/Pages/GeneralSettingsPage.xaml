@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="PolskiWhisperWin.Features.UI.Pages.GeneralSettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markupcompatibility/2006"
+    mc:Ignorable="d">
+
+    <ScrollViewer Padding="32,16,32,32">
+        <StackPanel Spacing="24" MaxWidth="700" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Ogólne"
+                       FontSize="24"
+                       FontWeight="SemiBold" />
+
+            <controls:SettingsCard
+                Header="Skrót klawiszowy"
+                Description="Klawisz uruchamiający dyktowanie. Kliknij aby zmienić."
+                HeaderIcon="{ui:FontIcon Glyph=&#xE765;}"
+                xmlns:ui="using:CommunityToolkit.WinUI">
+                <ComboBox x:Name="HotkeyComboBox"
+                          MinWidth="180"
+                          SelectionChanged="HotkeyComboBox_SelectionChanged" />
+            </controls:SettingsCard>
+
+            <controls:SettingsCard
+                Header="Tryb skrótu"
+                Description="Toggle: krótki tap włącza, kolejny wyłącza. Hold: trzymaj aby nagrywać."
+                HeaderIcon="{ui:FontIcon Glyph=&#xE7C8;}"
+                xmlns:ui="using:CommunityToolkit.WinUI">
+                <ComboBox x:Name="HotkeyModeComboBox"
+                          MinWidth="180"
+                          SelectionChanged="HotkeyModeComboBox_SelectionChanged">
+                    <ComboBoxItem Content="Toggle (krótki tap)" Tag="Toggle" />
+                    <ComboBoxItem Content="Hold (trzymaj klawisz)" Tag="Hold" />
+                </ComboBox>
+            </controls:SettingsCard>
+
+            <controls:SettingsCard
+                Header="Mikrofon"
+                Description="Urządzenie wejściowe używane do nagrywania."
+                HeaderIcon="{ui:FontIcon Glyph=&#xE720;}"
+                xmlns:ui="using:CommunityToolkit.WinUI">
+                <ComboBox x:Name="MicrophoneComboBox"
+                          MinWidth="280"
+                          SelectionChanged="MicrophoneComboBox_SelectionChanged" />
+            </controls:SettingsCard>
+
+            <controls:SettingsExpander
+                Header="Dźwięki"
+                Description="Krótkie sygnały dźwiękowe podczas dyktowania."
+                HeaderIcon="{ui:FontIcon Glyph=&#xE995;}"
+                xmlns:ui="using:CommunityToolkit.WinUI">
+
+                <controls:SettingsExpander.Items>
+                    <controls:SettingsCard Header="Dźwięk startu nagrywania">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ComboBox x:Name="StartSoundComboBox"
+                                      MinWidth="160"
+                                      SelectionChanged="StartSoundComboBox_SelectionChanged" />
+                            <Button Content="▶" Width="40"
+                                    Click="StartSoundPlayButton_Click"
+                                    ToolTipService.ToolTip="Odtwórz" />
+                        </StackPanel>
+                    </controls:SettingsCard>
+
+                    <controls:SettingsCard Header="Dźwięk zakończenia">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ComboBox x:Name="FinishSoundComboBox"
+                                      MinWidth="160"
+                                      SelectionChanged="FinishSoundComboBox_SelectionChanged" />
+                            <Button Content="▶" Width="40"
+                                    Click="FinishSoundPlayButton_Click"
+                                    ToolTipService.ToolTip="Odtwórz" />
+                        </StackPanel>
+                    </controls:SettingsCard>
+                </controls:SettingsExpander.Items>
+            </controls:SettingsExpander>
+
+            <controls:SettingsCard
+                Header="Maksymalny czas nagrywania"
+                Description="Po jak długim czasie nagrywanie zostanie automatycznie zatrzymane."
+                HeaderIcon="{ui:FontIcon Glyph=&#xE916;}"
+                xmlns:ui="using:CommunityToolkit.WinUI">
+                <ComboBox x:Name="MaxDurationComboBox"
+                          MinWidth="180"
+                          SelectionChanged="MaxDurationComboBox_SelectionChanged">
+                    <ComboBoxItem Content="1 minuta" Tag="60" />
+                    <ComboBoxItem Content="3 minuty" Tag="180" />
+                    <ComboBoxItem Content="5 minut" Tag="300" IsSelected="True" />
+                    <ComboBoxItem Content="10 minut" Tag="600" />
+                </ComboBox>
+            </controls:SettingsCard>
+
+            <controls:SettingsCard
+                Header="Uruchom przy starcie systemu"
+                Description="Aplikacja wystartuje automatycznie przy logowaniu Windows."
+                HeaderIcon="{ui:FontIcon Glyph=&#xE7E8;}"
+                xmlns:ui="using:CommunityToolkit.WinUI">
+                <ToggleSwitch x:Name="LaunchAtLoginToggle"
+                              Toggled="LaunchAtLoginToggle_Toggled" />
+            </controls:SettingsCard>
+
+            <controls:SettingsCard
+                Header="Aktualizacje"
+                Description="Sprawdzaj i instaluj nowe wersje aplikacji automatycznie."
+                HeaderIcon="{ui:FontIcon Glyph=&#xE777;}"
+                xmlns:ui="using:CommunityToolkit.WinUI">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <ToggleSwitch x:Name="AutoUpdatesToggle"
+                                  Toggled="AutoUpdatesToggle_Toggled" />
+                    <Button x:Name="CheckUpdatesButton"
+                            Content="Sprawdź teraz"
+                            Click="CheckUpdatesButton_Click" />
+                </StackPanel>
+            </controls:SettingsCard>
+
+            <InfoBar x:Name="UpdateInfoBar"
+                     IsOpen="False"
+                     Severity="Informational"
+                     IsClosable="True">
+                <InfoBar.ActionButton>
+                    <Button x:Name="InstallUpdateButton"
+                            Content="Pobierz i zainstaluj"
+                            Click="InstallUpdateButton_Click" />
+                </InfoBar.ActionButton>
+            </InfoBar>
+
+            <Border Margin="0,16,0,0" Padding="16"
+                    CornerRadius="8"
+                    Background="{ThemeResource SubtleFillColorTertiaryBrush}">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="GPU acceleration" FontWeight="SemiBold" />
+                    <TextBlock Text="Wykorzystaj kartę graficzną dla szybszej transkrypcji (DirectML). Wymaga GPU z DirectX 12."
+                               TextWrapping="Wrap"
+                               Opacity="0.8" />
+                    <ToggleSwitch x:Name="GpuToggle"
+                                  Margin="0,8,0,0"
+                                  Toggled="GpuToggle_Toggled" />
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</Page>

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="PolskiWhisperWin.Features.UI.Pages.AboutPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markupcompatibility/2006"
+    mc:Ignorable="d">
+
+    <ScrollViewer Padding="32,16,32,32">
+        <StackPanel Spacing="16" MaxWidth="700" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="O programie"
+                       FontSize="24"
+                       FontWeight="SemiBold" />
+
+            <Border Padding="24"
+                    CornerRadius="12"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="PolskiWhisper" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock x:Name="VersionTextBlock" Text="Wersja 0.1.0" Opacity="0.85" />
+                    <TextBlock TextWrapping="Wrap" Opacity="0.85"
+                               Text="Darmowa, otwartoźródłowa aplikacja do dyktowania głosowego po polsku. Działa w pełni offline po pobraniu modelu Whisper." />
+                </StackPanel>
+            </Border>
+
+            <Border Padding="16"
+                    CornerRadius="8"
+                    Background="{ThemeResource SubtleFillColorTertiaryBrush}">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Linki" FontWeight="SemiBold" />
+
+                    <HyperlinkButton x:Name="GithubLink"
+                                     Content="🌐 github.com/marcinwerner/polskiwhisper.pl"
+                                     NavigateUri="https://github.com/marcinwerner/polskiwhisper.pl" />
+
+                    <HyperlinkButton x:Name="WebsiteLink"
+                                     Content="🌐 polskiwhisper.pl"
+                                     NavigateUri="https://polskiwhisper.pl" />
+
+                    <HyperlinkButton x:Name="EmailLink"
+                                     Content="📧 kontakt@marcinwerner.com"
+                                     NavigateUri="mailto:kontakt@marcinwerner.com" />
+
+                    <HyperlinkButton x:Name="LicenseLink"
+                                     Content="📜 Licencja MIT"
+                                     NavigateUri="https://github.com/marcinwerner/polskiwhisper.pl/blob/main/LICENSE" />
+
+                    <HyperlinkButton x:Name="PrivacyLink"
+                                     Content="🔒 Polityka prywatności"
+                                     NavigateUri="https://github.com/marcinwerner/polskiwhisper.pl/blob/main/docs/PRIVACY.md" />
+                </StackPanel>
+            </Border>
+
+            <Border Padding="16"
+                    CornerRadius="8"
+                    Background="{ThemeResource SubtleFillColorTertiaryBrush}">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Filozofia projektu" FontWeight="SemiBold" />
+                    <TextBlock TextWrapping="Wrap" Opacity="0.85"
+                               Text="Stabilny hobby project, nie premium polished. Bez Microsoft Store fee, bez telemetrii. Aplikacja audytowalna - kod źródłowy publiczny na GitHub. Dla wszystkich Polaków którzy chcą dyktować w języku ojczystym." />
+                </StackPanel>
+            </Border>
+
+            <Border Padding="16"
+                    CornerRadius="8"
+                    Background="{ThemeResource SubtleFillColorTertiaryBrush}">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Co kontroluje aplikacja?" FontWeight="SemiBold" />
+                    <TextBlock TextWrapping="Wrap" Opacity="0.85">
+                        Połączenia sieciowe ograniczone do dwóch adresów:
+                    </TextBlock>
+                    <StackPanel Margin="16,0,0,0" Spacing="4">
+                        <TextBlock Opacity="0.85">• huggingface.co - pobieranie modeli Whisper</TextBlock>
+                        <TextBlock Opacity="0.85">• api.github.com - sprawdzanie aktualizacji (raz na 24h)</TextBlock>
+                    </StackPanel>
+                    <TextBlock TextWrapping="Wrap" Opacity="0.85">
+                        Aplikacja nie wysyła telemetrii, nie zapisuje historii transkrypcji, nie phone-home.
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <Border Padding="16"
+                    CornerRadius="8"
+                    Background="{ThemeResource SubtleFillColorTertiaryBrush}">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Sprzątanie kopii aplikacji" FontWeight="SemiBold" />
+                    <TextBlock TextWrapping="Wrap" Opacity="0.85"
+                               Text="Skanuje typowe lokalizacje i pomaga usunąć stare kopie PolskiWhisper.exe z Pulpitu, Pobranych itp." />
+                    <Button x:Name="ScanDuplicatesButton"
+                            Content="Sprawdź kopie"
+                            Click="ScanDuplicatesButton_Click" />
+                    <ListView x:Name="DuplicatesListView"
+                              Visibility="Collapsed"
+                              MaxHeight="200" />
+                    <Button x:Name="CleanDuplicatesButton"
+                            Content="Wyrzuć do kosza"
+                            Visibility="Collapsed"
+                            Click="CleanDuplicatesButton_Click" />
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</Page>

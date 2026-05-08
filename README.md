@@ -1,12 +1,15 @@
 # PolskiWhisper
 
-> Natywna macOS aplikacja do promptowania głosowego po polsku - w pełni lokalna, wolna, otwarta.
+> Natywna aplikacja do dyktowania głosowego po polsku - w pełni lokalna, wolna, otwarta. **macOS i Windows.**
 
 [![Release](https://img.shields.io/github/v/release/marcinwerner/polskiwhisper.pl?include_prereleases&label=pobierz&color=green)](https://github.com/marcinwerner/polskiwhisper.pl/releases/latest)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-lightgrey)](https://www.apple.com/macos/)
-[![Apple Silicon](https://img.shields.io/badge/Apple%20Silicon-required-blue)](https://support.apple.com/en-us/HT211814)
+[![Platform](https://img.shields.io/badge/macOS-14%2B-lightgrey)](https://www.apple.com/macos/)
+[![Platform](https://img.shields.io/badge/Windows-10%2B-blue)](windows/README.md)
 [![GitHub stars](https://img.shields.io/github/stars/marcinwerner/polskiwhisper.pl?style=social)](https://github.com/marcinwerner/polskiwhisper.pl/stargazers)
+
+> 🪟 **Wersja Windows**: zobacz [windows/README.md](windows/README.md). Stos: WinUI 3 + C# + Whisper.net.
+> Pełna parytet z macOS - ten sam workflow, te same funkcje, ten sam brand.
 
 ![PolskiWhisper](docs/screenshots/og-image.jpg)
 
