@@ -11,9 +11,7 @@
 
             <!-- Brand colors -->
             <Color x:Key="BrandPrimaryColor">#FF6B4A</Color>
-            <Color x:Key="BrandPrimaryColorDark">#D97757</Color>
             <SolidColorBrush x:Key="BrandPrimaryBrush" Color="{StaticResource BrandPrimaryColor}" />
-            <SolidColorBrush x:Key="BrandPrimaryDarkBrush" Color="{StaticResource BrandPrimaryColorDark}" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -14,13 +14,9 @@
 
     <Border CornerRadius="20"
             Padding="16,12,16,12"
-            BorderThickness="1">
-        <Border.Background>
-            <AcrylicBrush TintColor="Black" TintOpacity="0.65" FallbackColor="#222222" />
-        </Border.Background>
-        <Border.BorderBrush>
-            <SolidColorBrush Color="#33FFFFFF" />
-        </Border.BorderBrush>
+            BorderThickness="1"
+            Background="#E62A2A2A"
+            BorderBrush="#33FFFFFF">
 
         <Grid>
             <Grid.ColumnDefinitions>

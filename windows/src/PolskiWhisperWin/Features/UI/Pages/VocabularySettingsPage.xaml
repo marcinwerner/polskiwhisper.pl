@@ -6,7 +6,6 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markupcompatibility/2006"
     xmlns:models="using:PolskiWhisperWin.Core.Models"
-    xmlns:vm="using:PolskiWhisperWin.Features.UI.Pages"
     mc:Ignorable="d">
 
     <Grid Padding="32,16,32,32">
@@ -80,7 +79,6 @@
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
                         <FontIcon Grid.Column="0"
@@ -104,23 +102,7 @@
                                    Text="{x:Bind ReplaceWith}"
                                    VerticalAlignment="Center" />
 
-                        <StackPanel Grid.Column="4"
-                                    Orientation="Horizontal"
-                                    Spacing="4"
-                                    VerticalAlignment="Center">
-                            <Border CornerRadius="4" Padding="4,2,4,2"
-                                    Background="{ThemeResource SubtleFillColorTertiaryBrush}"
-                                    Visibility="{x:Bind IsRegex}">
-                                <TextBlock Text="Regex" FontSize="10" />
-                            </Border>
-                            <Border CornerRadius="4" Padding="4,2,4,2"
-                                    Background="{ThemeResource SubtleFillColorTertiaryBrush}"
-                                    Visibility="{x:Bind CaseSensitive}">
-                                <TextBlock Text="Aa" FontSize="10" />
-                            </Border>
-                        </StackPanel>
-
-                        <Button Grid.Column="5"
+                        <Button Grid.Column="4"
                                 Style="{ThemeResource SubtleButtonStyle}"
                                 Width="32"
                                 Height="32"

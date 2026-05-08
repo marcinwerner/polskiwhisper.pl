@@ -43,7 +43,7 @@ jobs:
         run: dotnet restore ${{ env.SOLUTION_PATH }}
 
       - name: Build
-        run: dotnet build ${{ env.SOLUTION_PATH }} -c ${{ env.CONFIGURATION }} --no-restore
+        run: dotnet build ${{ env.SOLUTION_PATH }} -c ${{ env.CONFIGURATION }} --no-restore -v normal
 
       - name: Run tests
         run: dotnet test ${{ env.SOLUTION_PATH }} -c ${{ env.CONFIGURATION }} --no-build --verbosity normal --collect:"XPlat Code Coverage"

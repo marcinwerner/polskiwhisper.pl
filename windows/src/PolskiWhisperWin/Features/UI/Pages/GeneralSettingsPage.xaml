@@ -17,9 +17,10 @@
 
             <controls:SettingsCard
                 Header="Skrót klawiszowy"
-                Description="Klawisz uruchamiający dyktowanie. Kliknij aby zmienić."
-                HeaderIcon="{ui:FontIcon Glyph=&#xE765;}"
-                xmlns:ui="using:CommunityToolkit.WinUI">
+                Description="Klawisz uruchamiający dyktowanie. Kliknij aby zmienić.">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE765;" />
+                </controls:SettingsCard.HeaderIcon>
                 <ComboBox x:Name="HotkeyComboBox"
                           MinWidth="180"
                           SelectionChanged="HotkeyComboBox_SelectionChanged" />
@@ -27,9 +28,10 @@
 
             <controls:SettingsCard
                 Header="Tryb skrótu"
-                Description="Toggle: krótki tap włącza, kolejny wyłącza. Hold: trzymaj aby nagrywać."
-                HeaderIcon="{ui:FontIcon Glyph=&#xE7C8;}"
-                xmlns:ui="using:CommunityToolkit.WinUI">
+                Description="Toggle: krótki tap włącza, kolejny wyłącza. Hold: trzymaj aby nagrywać.">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE7C8;" />
+                </controls:SettingsCard.HeaderIcon>
                 <ComboBox x:Name="HotkeyModeComboBox"
                           MinWidth="180"
                           SelectionChanged="HotkeyModeComboBox_SelectionChanged">
@@ -40,9 +42,10 @@
 
             <controls:SettingsCard
                 Header="Mikrofon"
-                Description="Urządzenie wejściowe używane do nagrywania."
-                HeaderIcon="{ui:FontIcon Glyph=&#xE720;}"
-                xmlns:ui="using:CommunityToolkit.WinUI">
+                Description="Urządzenie wejściowe używane do nagrywania.">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE720;" />
+                </controls:SettingsCard.HeaderIcon>
                 <ComboBox x:Name="MicrophoneComboBox"
                           MinWidth="280"
                           SelectionChanged="MicrophoneComboBox_SelectionChanged" />
@@ -50,9 +53,10 @@
 
             <controls:SettingsExpander
                 Header="Dźwięki"
-                Description="Krótkie sygnały dźwiękowe podczas dyktowania."
-                HeaderIcon="{ui:FontIcon Glyph=&#xE995;}"
-                xmlns:ui="using:CommunityToolkit.WinUI">
+                Description="Krótkie sygnały dźwiękowe podczas dyktowania.">
+                <controls:SettingsExpander.HeaderIcon>
+                    <FontIcon Glyph="&#xE995;" />
+                </controls:SettingsExpander.HeaderIcon>
 
                 <controls:SettingsExpander.Items>
                     <controls:SettingsCard Header="Dźwięk startu nagrywania">
@@ -81,9 +85,10 @@
 
             <controls:SettingsCard
                 Header="Maksymalny czas nagrywania"
-                Description="Po jak długim czasie nagrywanie zostanie automatycznie zatrzymane."
-                HeaderIcon="{ui:FontIcon Glyph=&#xE916;}"
-                xmlns:ui="using:CommunityToolkit.WinUI">
+                Description="Po jak długim czasie nagrywanie zostanie automatycznie zatrzymane.">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE916;" />
+                </controls:SettingsCard.HeaderIcon>
                 <ComboBox x:Name="MaxDurationComboBox"
                           MinWidth="180"
                           SelectionChanged="MaxDurationComboBox_SelectionChanged">
@@ -96,18 +101,20 @@
 
             <controls:SettingsCard
                 Header="Uruchom przy starcie systemu"
-                Description="Aplikacja wystartuje automatycznie przy logowaniu Windows."
-                HeaderIcon="{ui:FontIcon Glyph=&#xE7E8;}"
-                xmlns:ui="using:CommunityToolkit.WinUI">
+                Description="Aplikacja wystartuje automatycznie przy logowaniu Windows.">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE7E8;" />
+                </controls:SettingsCard.HeaderIcon>
                 <ToggleSwitch x:Name="LaunchAtLoginToggle"
                               Toggled="LaunchAtLoginToggle_Toggled" />
             </controls:SettingsCard>
 
             <controls:SettingsCard
                 Header="Aktualizacje"
-                Description="Sprawdzaj i instaluj nowe wersje aplikacji automatycznie."
-                HeaderIcon="{ui:FontIcon Glyph=&#xE777;}"
-                xmlns:ui="using:CommunityToolkit.WinUI">
+                Description="Sprawdzaj i instaluj nowe wersje aplikacji automatycznie.">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE777;" />
+                </controls:SettingsCard.HeaderIcon>
                 <StackPanel Orientation="Horizontal" Spacing="12">
                     <ToggleSwitch x:Name="AutoUpdatesToggle"
                                   Toggled="AutoUpdatesToggle_Toggled" />
