@@ -15,6 +15,11 @@
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <SelfContained>true</SelfContained>
     <EnableMsixTooling>false</EnableMsixTooling>
+    <!-- Wyłączenie MRT/PRI tools (wymagaja Visual Studio MSBuild, nie czysty .NET SDK na CI). -->
+    <EnableDefaultPriItems>false</EnableDefaultPriItems>
+    <DisableMrtIfNoSchemaInstaller>true</DisableMrtIfNoSchemaInstaller>
+    <DisableEmbeddedXbf>true</DisableEmbeddedXbf>
+    <GenerateLibraryLayout>false</GenerateLibraryLayout>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>

@@ -31,6 +31,9 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
+      - name: Setup MSBuild (z Visual Studio dla WinUI 3 MRT tasks)
+        uses: microsoft/setup-msbuild@v2
+
       - name: Cache NuGet packages
         uses: actions/cache@v4
         with:
