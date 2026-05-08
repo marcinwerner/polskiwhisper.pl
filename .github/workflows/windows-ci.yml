@@ -43,13 +43,13 @@ jobs:
             ${{ runner.os }}-nuget-
 
       - name: Restore dependencies
-        run: dotnet restore ${{ env.SOLUTION_PATH }}
+        run: msbuild ${{ env.SOLUTION_PATH }} /t:Restore /p:Configuration=${{ env.CONFIGURATION }} /p:Platform=x64
 
       - name: Build
-        run: dotnet build ${{ env.SOLUTION_PATH }} -c ${{ env.CONFIGURATION }} --no-restore -v normal
+        run: msbuild ${{ env.SOLUTION_PATH }} /p:Configuration=${{ env.CONFIGURATION }} /p:Platform=x64 /v:normal
 
       - name: Run tests
-        run: dotnet test ${{ env.SOLUTION_PATH }} -c ${{ env.CONFIGURATION }} --no-build --verbosity normal --collect:"XPlat Code Coverage"
+        run: dotnet test windows/src/PolskiWhisperWin.Tests/PolskiWhisperWin.Tests.csproj -c ${{ env.CONFIGURATION }} --verbosity normal --collect:"XPlat Code Coverage"
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
