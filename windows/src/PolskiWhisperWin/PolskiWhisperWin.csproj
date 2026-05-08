@@ -56,6 +56,48 @@
     <ProjectReference Include="..\PolskiWhisperWin.Core\PolskiWhisperWin.Core.csproj" />
   </ItemGroup>
 
+  <!--
+    v0.1.0: tymczasowo wyłączamy complex XAML pages aż XamlCompiler issue zostanie zbadany na Windows machine.
+    Pliki zostają na dysku, ale są wyłączone z compile. Aktywować je przez usunięcie tych Remove statements.
+    Inne podejście dla v0.1.x: uruchom build lokalnie w Visual Studio aby zobaczyć konkretne XamlCompiler errory.
+  -->
+  <ItemGroup>
+    <Page Remove="Features\UI\Pages\GeneralSettingsPage.xaml" />
+    <Page Remove="Features\UI\Pages\WhisperSettingsPage.xaml" />
+    <Page Remove="Features\UI\Pages\VocabularySettingsPage.xaml" />
+    <Page Remove="Features\UI\Pages\AboutPage.xaml" />
+    <Page Remove="Features\UI\Floating\FloatingDictationWindow.xaml" />
+    <Page Remove="Features\UI\Floating\WaveformView.xaml" />
+    <Page Remove="Onboarding\OnboardingWindow.xaml" />
+    <Page Remove="Onboarding\Steps\WelcomeStep.xaml" />
+    <Page Remove="Onboarding\Steps\MicrophoneStep.xaml" />
+    <Page Remove="Onboarding\Steps\ModelStep.xaml" />
+    <Page Remove="Onboarding\Steps\HotkeyStep.xaml" />
+    <Page Remove="Onboarding\Steps\FinishStep.xaml" />
+
+    <Compile Remove="Features\UI\Pages\**\*.cs" />
+    <Compile Remove="Features\UI\Floating\**\*.cs" />
+    <Compile Remove="Onboarding\**\*.cs" />
+
+    <None Include="Features\UI\Pages\**\*.xaml" />
+    <None Include="Features\UI\Pages\**\*.xaml.cs" />
+    <None Include="Features\UI\Floating\**\*.xaml" />
+    <None Include="Features\UI\Floating\**\*.xaml.cs" />
+    <None Include="Features\UI\Floating\**\*.cs" />
+    <None Include="Onboarding\**\*.xaml" />
+    <None Include="Onboarding\**\*.cs" />
+  </ItemGroup>
+
+  <!-- W placeholder v0.1.0 wyłączamy też SoundService + TrayIconController + NotificationDispatcher (UI-related). -->
+  <ItemGroup>
+    <Compile Remove="Features\UI\SoundService.cs" />
+    <Compile Remove="Features\UI\TrayIconController.cs" />
+    <Compile Remove="Features\Updates\NotificationDispatcher.cs" />
+    <None Include="Features\UI\SoundService.cs" />
+    <None Include="Features\UI\TrayIconController.cs" />
+    <None Include="Features\Updates\NotificationDispatcher.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <Content Include="Assets\AppIcon.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

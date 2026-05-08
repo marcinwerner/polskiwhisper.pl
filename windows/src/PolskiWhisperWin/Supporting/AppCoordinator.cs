@@ -12,7 +12,6 @@ using PolskiWhisperWin.Core.Models;
 using PolskiWhisperWin.Core.Services;
 using PolskiWhisperWin.Core.Utilities;
 using PolskiWhisperWin.Features.Dictation;
-using PolskiWhisperWin.Features.UI;
 using PolskiWhisperWin.Features.Updates;
 using PolskiWhisperWin.Hotkey;
 
@@ -209,9 +208,8 @@ public sealed class AppCoordinator
 
         if (update is { IsNewer: true })
         {
+            // v0.1.0: NotificationDispatcher tymczasowo wyłączony - log only.
             Logger.LogInformation("Dostępna nowa wersja {Version}.", update.LatestVersion);
-            var notification = Services.GetRequiredService<NotificationDispatcher>();
-            notification.ShowUpdateAvailable(update);
         }
     }
 
@@ -244,12 +242,11 @@ public sealed class AppCoordinator
         services.AddSingleton<IAudioRecorder, NAudioRecorder>();
         services.AddSingleton<IPasteService, ClipboardPasteService>();
         services.AddSingleton<HotkeyMonitor>();
-        services.AddSingleton<TrayIconController>();
-        services.AddSingleton<NotificationDispatcher>();
         services.AddSingleton<DuplicateAppFinder>();
-        services.AddSingleton<SoundService>();
         services.AddSingleton<LaunchAtLoginManager>();
         services.AddSingleton<SelfUpdateInstaller>();
+        // v0.1.0: TrayIconController, NotificationDispatcher, SoundService wyłączone w csproj
+        // (zależą od UI Pages które są tymczasowo disabled).
 
         // Orchestrator.
         services.AddSingleton<DictationEngine>();
