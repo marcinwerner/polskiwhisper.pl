@@ -6,6 +6,7 @@ on:
     paths:
       - 'windows/**'
       - '.github/workflows/windows-ci.yml'
+      - 'global.json'
   pull_request:
     branches: [main]
     paths:
@@ -58,80 +59,11 @@ jobs:
           name: test-results
           path: '**/TestResults/**/*.trx'
 
-  publish-x64:
-    name: Publish x64
-    runs-on: windows-latest
-    needs: build-and-test
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup .NET 8
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Restore
-        run: dotnet restore ${{ env.SOLUTION_PATH }}
-
-      - name: Publish x64
-        run: |
-          dotnet publish windows/src/PolskiWhisperWin/PolskiWhisperWin.csproj `
-            -c Release `
-            -r win-x64 `
-            --self-contained true `
-            -o publish/win-x64
-
-      - name: Install WiX
-        run: dotnet tool install --global wix
-
-      - name: Build MSI installer
-        shell: pwsh
-        run: |
-          $version = "0.1.0-ci-${env:GITHUB_RUN_NUMBER}"
-          ./windows/scripts/build-installer.ps1 -Runtime win-x64 -Version $version
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: PolskiWhisper-win-x64
-          path: |
-            windows/dist/*.msi
-            windows/dist/*.zip
-
-  release:
-    name: Create GitHub Release
-    runs-on: windows-latest
-    needs: [build-and-test, publish-x64]
-    if: startsWith(github.ref, 'refs/tags/win-v')
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup .NET 8
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Restore + publish + installer
-        shell: pwsh
-        run: |
-          $version = "${env:GITHUB_REF_NAME}".TrimStart("win-v")
-          dotnet restore ${{ env.SOLUTION_PATH }}
-          dotnet publish windows/src/PolskiWhisperWin/PolskiWhisperWin.csproj `
-            -c Release -r win-x64 --self-contained true -o publish/win-x64
-          dotnet tool install --global wix
-          ./windows/scripts/build-installer.ps1 -Runtime win-x64 -Version $version
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            windows/dist/*.msi
-            windows/dist/*.zip
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  # Publish x64 + Create GitHub Release jobs zostały wyłączone w v0.1.0
+  # MSI build wymaga Visual Studio 2022 + Windows SDK lokalnie.
+  # Marcin generuje MSI ręcznie przez windows/scripts/build-installer.ps1
+  # i tworzy GitHub Release przez windows/scripts/release.ps1 lub gh CLI.
+  #
+  # Aktywacja w v0.2.0 - wymaga research jak uruchomić MRT/PRI tools na CI runner
+  # bez pełnej Visual Studio installation (lub po prostu user windows-2025-vs2026 image
+  # z preinstallowanym MSBuild + Windows SDK).
