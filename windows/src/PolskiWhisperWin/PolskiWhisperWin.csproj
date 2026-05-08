@@ -18,7 +18,9 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
-    <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
+    <!-- ApplicationIcon: dodać Assets\AppIcon.ico przed pierwszym MSI release. -->
+    <!-- <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon> -->
+
     <AssemblyTitle>PolskiWhisper</AssemblyTitle>
     <Authors>Marcin Werner</Authors>
     <Company>marcinwerner.com</Company>
@@ -100,7 +102,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Assets\AppIcon.ico">
+    <Content Include="Assets\AppIcon.ico" Condition="Exists('Assets\AppIcon.ico')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Assets\TrayIcon.ico" Condition="Exists('Assets\TrayIcon.ico')">
