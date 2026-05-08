@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Serilog;
 using PolskiWhisperWin.Core.Models;
 using PolskiWhisperWin.Core.Services;
 using PolskiWhisperWin.Core.Utilities;
