@@ -3,9 +3,9 @@
 // See LICENSE in the repository root.
 
 using System.Reflection;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using PolskiWhisperWin.Features.UI.Pages;
-using WinUIEx;
 
 namespace PolskiWhisperWin.Features.UI;
 
@@ -13,7 +13,7 @@ namespace PolskiWhisperWin.Features.UI;
 /// Główne okno Settings - mapping z macOS <c>MainWindow</c>. 4 zakładki:
 /// Ogólne, Whisper, Słownik, O programie.
 /// </summary>
-public sealed partial class MainWindow : WindowEx
+public sealed partial class MainWindow : Window
 {
     public MainWindow()
     {
@@ -26,8 +26,18 @@ public sealed partial class MainWindow : WindowEx
             VersionLabel.Text = $"v{version.Major}.{version.Minor}.{version.Build}";
         }
 
+        Title = "PolskiWhisper - Ustawienia";
+
         // Default page: General.
         ContentFrame.Navigate(typeof(GeneralSettingsPage));
+    }
+
+    /// <summary>
+    /// Wymuś okno na wierzch - wywoływane z tray (lewy klik).
+    /// </summary>
+    public void BringToFront()
+    {
+        Activate();
     }
 
     private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)

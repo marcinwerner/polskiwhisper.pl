@@ -3,140 +3,239 @@
     x:Class="PolskiWhisperWin.Features.UI.Pages.GeneralSettingsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markupcompatibility/2006"
     mc:Ignorable="d">
 
     <ScrollViewer Padding="32,16,32,32">
-        <StackPanel Spacing="24" MaxWidth="700" HorizontalAlignment="Stretch">
+        <StackPanel Spacing="20" MaxWidth="700" HorizontalAlignment="Stretch">
 
             <TextBlock Text="Ogólne"
                        FontSize="24"
                        FontWeight="SemiBold" />
 
-            <controls:SettingsCard
-                Header="Skrót klawiszowy"
-                Description="Klawisz uruchamiający dyktowanie. Kliknij aby zmienić.">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE765;" />
-                </controls:SettingsCard.HeaderIcon>
-                <ComboBox x:Name="HotkeyComboBox"
-                          MinWidth="180"
-                          SelectionChanged="HotkeyComboBox_SelectionChanged" />
-            </controls:SettingsCard>
+            <!-- Skrót klawiszowy -->
+            <Border Padding="16" CornerRadius="8"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1">
+                <Grid ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Spacing="2">
+                        <TextBlock Text="Skrót klawiszowy" FontWeight="SemiBold" />
+                        <TextBlock Text="Klawisz uruchamiający dyktowanie."
+                                   Opacity="0.75"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                    <ComboBox x:Name="HotkeyComboBox"
+                              Grid.Column="1"
+                              MinWidth="180"
+                              SelectionChanged="HotkeyComboBox_SelectionChanged"
+                              VerticalAlignment="Center" />
+                </Grid>
+            </Border>
 
-            <controls:SettingsCard
-                Header="Tryb skrótu"
-                Description="Toggle: krótki tap włącza, kolejny wyłącza. Hold: trzymaj aby nagrywać.">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE7C8;" />
-                </controls:SettingsCard.HeaderIcon>
-                <ComboBox x:Name="HotkeyModeComboBox"
-                          MinWidth="180"
-                          SelectionChanged="HotkeyModeComboBox_SelectionChanged">
-                    <ComboBoxItem Content="Toggle (krótki tap)" Tag="Toggle" />
-                    <ComboBoxItem Content="Hold (trzymaj klawisz)" Tag="Hold" />
-                </ComboBox>
-            </controls:SettingsCard>
+            <!-- Tryb skrótu -->
+            <Border Padding="16" CornerRadius="8"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1">
+                <Grid ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Spacing="2">
+                        <TextBlock Text="Tryb skrótu" FontWeight="SemiBold" />
+                        <TextBlock Text="Toggle: krótki tap włącza, kolejny wyłącza. Hold: trzymaj aby nagrywać."
+                                   Opacity="0.75"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                    <ComboBox x:Name="HotkeyModeComboBox"
+                              Grid.Column="1"
+                              MinWidth="180"
+                              SelectionChanged="HotkeyModeComboBox_SelectionChanged"
+                              VerticalAlignment="Center">
+                        <ComboBoxItem Content="Toggle (krótki tap)" Tag="Toggle" />
+                        <ComboBoxItem Content="Hold (trzymaj klawisz)" Tag="Hold" />
+                    </ComboBox>
+                </Grid>
+            </Border>
 
-            <controls:SettingsCard
-                Header="Mikrofon"
-                Description="Urządzenie wejściowe używane do nagrywania.">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE720;" />
-                </controls:SettingsCard.HeaderIcon>
-                <ComboBox x:Name="MicrophoneComboBox"
-                          MinWidth="280"
-                          SelectionChanged="MicrophoneComboBox_SelectionChanged" />
-            </controls:SettingsCard>
+            <!-- Mikrofon -->
+            <Border Padding="16" CornerRadius="8"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1">
+                <Grid ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Spacing="2">
+                        <TextBlock Text="Mikrofon" FontWeight="SemiBold" />
+                        <TextBlock Text="Urządzenie wejściowe używane do nagrywania."
+                                   Opacity="0.75"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                    <ComboBox x:Name="MicrophoneComboBox"
+                              Grid.Column="1"
+                              MinWidth="280"
+                              SelectionChanged="MicrophoneComboBox_SelectionChanged"
+                              VerticalAlignment="Center" />
+                </Grid>
+            </Border>
 
-            <controls:SettingsExpander
-                Header="Dźwięki"
-                Description="Krótkie sygnały dźwiękowe podczas dyktowania.">
-                <controls:SettingsExpander.HeaderIcon>
-                    <FontIcon Glyph="&#xE995;" />
-                </controls:SettingsExpander.HeaderIcon>
+            <!-- Dźwięki -->
+            <Border Padding="16" CornerRadius="8"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Dźwięki" FontWeight="SemiBold" />
 
-                <controls:SettingsExpander.Items>
-                    <controls:SettingsCard Header="Dźwięk startu nagrywania">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <ComboBox x:Name="StartSoundComboBox"
-                                      MinWidth="160"
-                                      SelectionChanged="StartSoundComboBox_SelectionChanged" />
-                            <Button Content="▶" Width="40"
-                                    Click="StartSoundPlayButton_Click"
-                                    ToolTipService.ToolTip="Odtwórz" />
-                        </StackPanel>
-                    </controls:SettingsCard>
+                    <Grid ColumnSpacing="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   Text="Dźwięk startu nagrywania"
+                                   VerticalAlignment="Center" />
+                        <ComboBox x:Name="StartSoundComboBox"
+                                  Grid.Column="1"
+                                  MinWidth="160"
+                                  SelectionChanged="StartSoundComboBox_SelectionChanged" />
+                        <Button Grid.Column="2"
+                                Content="▶"
+                                Width="40"
+                                Margin="8,0,0,0"
+                                Click="StartSoundPlayButton_Click" />
+                    </Grid>
 
-                    <controls:SettingsCard Header="Dźwięk zakończenia">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <ComboBox x:Name="FinishSoundComboBox"
-                                      MinWidth="160"
-                                      SelectionChanged="FinishSoundComboBox_SelectionChanged" />
-                            <Button Content="▶" Width="40"
-                                    Click="FinishSoundPlayButton_Click"
-                                    ToolTipService.ToolTip="Odtwórz" />
-                        </StackPanel>
-                    </controls:SettingsCard>
-                </controls:SettingsExpander.Items>
-            </controls:SettingsExpander>
-
-            <controls:SettingsCard
-                Header="Maksymalny czas nagrywania"
-                Description="Po jak długim czasie nagrywanie zostanie automatycznie zatrzymane.">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE916;" />
-                </controls:SettingsCard.HeaderIcon>
-                <ComboBox x:Name="MaxDurationComboBox"
-                          MinWidth="180"
-                          SelectionChanged="MaxDurationComboBox_SelectionChanged">
-                    <ComboBoxItem Content="1 minuta" Tag="60" />
-                    <ComboBoxItem Content="3 minuty" Tag="180" />
-                    <ComboBoxItem Content="5 minut" Tag="300" IsSelected="True" />
-                    <ComboBoxItem Content="10 minut" Tag="600" />
-                </ComboBox>
-            </controls:SettingsCard>
-
-            <controls:SettingsCard
-                Header="Uruchom przy starcie systemu"
-                Description="Aplikacja wystartuje automatycznie przy logowaniu Windows.">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE7E8;" />
-                </controls:SettingsCard.HeaderIcon>
-                <ToggleSwitch x:Name="LaunchAtLoginToggle"
-                              Toggled="LaunchAtLoginToggle_Toggled" />
-            </controls:SettingsCard>
-
-            <controls:SettingsCard
-                Header="Aktualizacje"
-                Description="Sprawdzaj i instaluj nowe wersje aplikacji automatycznie.">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE777;" />
-                </controls:SettingsCard.HeaderIcon>
-                <StackPanel Orientation="Horizontal" Spacing="12">
-                    <ToggleSwitch x:Name="AutoUpdatesToggle"
-                                  Toggled="AutoUpdatesToggle_Toggled" />
-                    <Button x:Name="CheckUpdatesButton"
-                            Content="Sprawdź teraz"
-                            Click="CheckUpdatesButton_Click" />
+                    <Grid ColumnSpacing="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   Text="Dźwięk zakończenia"
+                                   VerticalAlignment="Center" />
+                        <ComboBox x:Name="FinishSoundComboBox"
+                                  Grid.Column="1"
+                                  MinWidth="160"
+                                  SelectionChanged="FinishSoundComboBox_SelectionChanged" />
+                        <Button Grid.Column="2"
+                                Content="▶"
+                                Width="40"
+                                Margin="8,0,0,0"
+                                Click="FinishSoundPlayButton_Click" />
+                    </Grid>
                 </StackPanel>
-            </controls:SettingsCard>
+            </Border>
 
-            <InfoBar x:Name="UpdateInfoBar"
-                     IsOpen="False"
-                     Severity="Informational"
-                     IsClosable="True">
-                <InfoBar.ActionButton>
-                    <Button x:Name="InstallUpdateButton"
-                            Content="Pobierz i zainstaluj"
-                            Click="InstallUpdateButton_Click" />
-                </InfoBar.ActionButton>
-            </InfoBar>
+            <!-- Maksymalny czas -->
+            <Border Padding="16" CornerRadius="8"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1">
+                <Grid ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Spacing="2">
+                        <TextBlock Text="Maksymalny czas nagrywania" FontWeight="SemiBold" />
+                        <TextBlock Text="Po jak długim czasie nagrywanie zostanie zatrzymane."
+                                   Opacity="0.75"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                    <ComboBox x:Name="MaxDurationComboBox"
+                              Grid.Column="1"
+                              MinWidth="180"
+                              SelectionChanged="MaxDurationComboBox_SelectionChanged"
+                              VerticalAlignment="Center">
+                        <ComboBoxItem Content="1 minuta" Tag="60" />
+                        <ComboBoxItem Content="3 minuty" Tag="180" />
+                        <ComboBoxItem Content="5 minut" Tag="300" IsSelected="True" />
+                        <ComboBoxItem Content="10 minut" Tag="600" />
+                    </ComboBox>
+                </Grid>
+            </Border>
 
-            <Border Margin="0,16,0,0" Padding="16"
-                    CornerRadius="8"
+            <!-- Autostart -->
+            <Border Padding="16" CornerRadius="8"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1">
+                <Grid ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Spacing="2">
+                        <TextBlock Text="Uruchom przy starcie systemu" FontWeight="SemiBold" />
+                        <TextBlock Text="Aplikacja wystartuje automatycznie przy logowaniu Windows."
+                                   Opacity="0.75"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                    <ToggleSwitch x:Name="LaunchAtLoginToggle"
+                                  Grid.Column="1"
+                                  Toggled="LaunchAtLoginToggle_Toggled"
+                                  VerticalAlignment="Center" />
+                </Grid>
+            </Border>
+
+            <!-- Aktualizacje -->
+            <Border Padding="16" CornerRadius="8"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1">
+                <StackPanel Spacing="12">
+                    <Grid ColumnSpacing="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="Aktualizacje" FontWeight="SemiBold" />
+                            <TextBlock Text="Sprawdzaj i instaluj nowe wersje automatycznie."
+                                       Opacity="0.75"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                        <ToggleSwitch x:Name="AutoUpdatesToggle"
+                                      Grid.Column="1"
+                                      Toggled="AutoUpdatesToggle_Toggled"
+                                      VerticalAlignment="Center" />
+                        <Button x:Name="CheckUpdatesButton"
+                                Grid.Column="2"
+                                Content="Sprawdź teraz"
+                                Margin="8,0,0,0"
+                                Click="CheckUpdatesButton_Click"
+                                VerticalAlignment="Center" />
+                    </Grid>
+
+                    <InfoBar x:Name="UpdateInfoBar"
+                             IsOpen="False"
+                             Severity="Informational"
+                             IsClosable="True">
+                        <InfoBar.ActionButton>
+                            <Button x:Name="InstallUpdateButton"
+                                    Content="Pobierz i zainstaluj"
+                                    Click="InstallUpdateButton_Click" />
+                        </InfoBar.ActionButton>
+                    </InfoBar>
+                </StackPanel>
+            </Border>
+
+            <!-- GPU acceleration -->
+            <Border Padding="16" CornerRadius="8"
                     Background="{ThemeResource SubtleFillColorTertiaryBrush}">
                 <StackPanel Spacing="4">
                     <TextBlock Text="GPU acceleration" FontWeight="SemiBold" />

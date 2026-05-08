@@ -1,15 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<winuiex:WindowEx
+<Window
     x:Class="PolskiWhisperWin.Features.UI.Floating.FloatingDictationWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:winuiex="using:WinUIEx"
     xmlns:floating="using:PolskiWhisperWin.Features.UI.Floating"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markupcompatibility/2006"
-    Title="PolskiWhisper - Dictation"
-    Width="320"
-    Height="80"
     mc:Ignorable="d">
 
     <Border CornerRadius="20"
@@ -60,4 +56,4 @@
                        Background="#22FFFFFF" />
         </Grid>
     </Border>
-</winuiex:WindowEx>
+</Window>

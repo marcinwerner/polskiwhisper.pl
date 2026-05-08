@@ -3,15 +3,12 @@
 // See LICENSE in the repository root.
 
 using System;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 using PolskiWhisperWin.Core.Models;
 using PolskiWhisperWin.Core.Services;
 using Windows.Graphics;
-using WinUIEx;
 
 namespace PolskiWhisperWin.Features.UI.Floating;
 
@@ -21,10 +18,9 @@ namespace PolskiWhisperWin.Features.UI.Floating;
 /// </summary>
 /// <remarks>
 /// <para>Pozycja: górna-środkowa część ekranu, przesunięte 60px od góry.</para>
-/// <para>Topmost = true (zawsze na wierzchu).</para>
-/// <para>Click-through = NIE (user musi móc kliknąć Esc / poza nim aby przerwać).</para>
+/// <para>Topmost via OverlappedPresenter.IsAlwaysOnTop.</para>
 /// </remarks>
-public sealed partial class FloatingDictationWindow : WindowEx
+public sealed partial class FloatingDictationWindow : Window
 {
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly DictationEngine _dictationEngine;
@@ -37,13 +33,18 @@ public sealed partial class FloatingDictationWindow : WindowEx
         _dictationEngine = dictationEngine;
         _audioRecorder = audioRecorder;
 
-        // Konfiguracja: borderless, no resize, topmost.
-        IsAlwaysOnTop = true;
-        IsMaximizable = false;
-        IsMinimizable = false;
-        IsResizable = false;
-        IsTitleBarVisible = false;
-        IsShownInSwitchers = false;
+        Title = "PolskiWhisper - Dictation";
+
+        // Konfiguracja: borderless, no resize, topmost - przez OverlappedPresenter.
+        if (AppWindow.Presenter is OverlappedPresenter presenter)
+        {
+            presenter.IsAlwaysOnTop = true;
+            presenter.IsMaximizable = false;
+            presenter.IsMinimizable = false;
+            presenter.IsResizable = false;
+            presenter.SetBorderAndTitleBar(hasBorder: false, hasTitleBar: false);
+        }
+        AppWindow.IsShownInSwitchers = false;
 
         PositionAtTopCenter();
 
@@ -57,9 +58,12 @@ public sealed partial class FloatingDictationWindow : WindowEx
         };
     }
 
+    /// <summary>Ukryj okno (Window nie ma natywnego Hide w WinUI 3 - używamy AppWindow).</summary>
+    public new void Hide() => AppWindow.Hide();
+
     private void PositionAtTopCenter()
     {
-        var monitor = DisplayArea.GetFromWindowId(this.AppWindow.Id, DisplayAreaFallback.Primary);
+        var monitor = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Primary);
         if (monitor is null) return;
 
         var workArea = monitor.WorkArea;

@@ -3,9 +3,9 @@
 // See LICENSE in the repository root.
 
 using System;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using PolskiWhisperWin.Onboarding.Steps;
-using WinUIEx;
 
 namespace PolskiWhisperWin.Onboarding;
 
@@ -13,7 +13,7 @@ namespace PolskiWhisperWin.Onboarding;
 /// Onboarding wizard - 5 kroków first-run experience.
 /// Mapping z macOS <c>OnboardingFlow</c>.
 /// </summary>
-public sealed partial class OnboardingWindow : WindowEx
+public sealed partial class OnboardingWindow : Window
 {
     private readonly Type[] _steps =
     {
@@ -29,8 +29,14 @@ public sealed partial class OnboardingWindow : WindowEx
     public OnboardingWindow()
     {
         InitializeComponent();
-        IsResizable = false;
-        IsMaximizable = false;
+        Title = "PolskiWhisper - Konfiguracja";
+
+        if (AppWindow.Presenter is OverlappedPresenter presenter)
+        {
+            presenter.IsResizable = false;
+            presenter.IsMaximizable = false;
+        }
+
         ShowStep(0);
     }
 
