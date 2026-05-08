@@ -15,6 +15,7 @@ struct GeneralSettingsTab: View {
     @AppStorage(AppCoordinator.Keys.maxRecordingDuration) private var maxDuration: Double = 300
     @AppStorage(AppCoordinator.Keys.selectedStartSound) private var selectedStartSoundRaw: String = SoundService.SoundChoice.pop.rawValue
     @AppStorage(AppCoordinator.Keys.selectedFinishSound) private var selectedFinishSoundRaw: String = SoundService.SoundChoice.tink.rawValue
+    @AppStorage(AppCoordinator.Keys.autoUpdateEnabled) private var autoUpdateEnabled: Bool = false
 
     // @AppStorage dla reactive UI - custom Binding z AppCoordinator getterem
     // NIE jest observable przez SwiftUI (UserDefaults read nie triggeruje view update).
@@ -60,28 +61,61 @@ struct GeneralSettingsTab: View {
     ]
 
     @State private var updateChecker = UpdateChecker.shared
+    @State private var duplicateFinder = DuplicateAppFinder.shared
 
     var body: some View {
         Form {
-            // Sekcja aktualizacji - banner + force check button
+            // Sekcja aktualizacji - banner + force check button + auto-install
             Section("Aktualizacje") {
                 if let update = updateChecker.availableUpdate {
-                    HStack(alignment: .top, spacing: 12) {
-                        Image(systemName: "arrow.down.circle.fill")
-                            .font(.title2)
-                            .foregroundStyle(.green)
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Dostępna nowa wersja: PolskiWhisper v\(update.version)")
-                                .font(.headline)
-                            Text("Aktualnie używasz v\(Bundle.main.appVersion). Pobierz nowy DMG z GitHub.")
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(alignment: .top, spacing: 12) {
+                            Image(systemName: "arrow.down.circle.fill")
+                                .font(.title2)
+                                .foregroundStyle(.green)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Dostępna nowa wersja: PolskiWhisper v\(update.version)")
+                                    .font(.headline)
+                                Text("Aktualnie używasz v\(Bundle.main.appVersion).")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                        }
+
+                        HStack(spacing: 8) {
+                            Button {
+                                Task { await updateChecker.downloadAndInstall(update) }
+                            } label: {
+                                if updateChecker.isDownloading {
+                                    HStack(spacing: 6) {
+                                        ProgressView().controlSize(.small)
+                                        Text("Pobieram i instaluję...")
+                                    }
+                                } else {
+                                    Label("Pobierz i zainstaluj", systemImage: "arrow.down.app.fill")
+                                }
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .disabled(updateChecker.isDownloading)
+
+                            Button("Tylko otwórz GitHub") {
+                                NSWorkspace.shared.open(update.releaseNotesURL)
+                            }
+                            .disabled(updateChecker.isDownloading)
+                        }
+
+                        if let error = updateChecker.downloadError {
+                            Text(error)
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                        }
+
+                        if updateChecker.isDownloading {
+                            Text("Aplikacja zamknie się i otworzy ponownie w nowej wersji za chwilę.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
-                        Spacer()
-                        Button("Otwórz GitHub") {
-                            NSWorkspace.shared.open(update.releaseNotesURL)
-                        }
-                        .buttonStyle(.borderedProminent)
                     }
                     .padding(.vertical, 4)
                 } else {
@@ -119,6 +153,78 @@ struct GeneralSettingsTab: View {
                         Text("Jeszcze nie sprawdzano")
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                    }
+                }
+
+                Toggle("Aktualizuj automatycznie", isOn: $autoUpdateEnabled)
+                    .help("Gdy włączone: aplikacja pobiera i instaluje nowe wersje sama, bez pytania. Gdy wyłączone: pokazuje banner gdy jest dostępna aktualizacja, klikniesz aby zainstalować.")
+                Text("Po włączeniu aplikacja sama pobierze i zainstaluje nowe wersje przy starcie. Bez Twojej ingerencji - po prostu uruchamiasz i masz najnowszą.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            // Sekcja starych kopii - widoczna TYLKO gdy znaleziono duplikaty.
+            // Pomaga user'owi sprzątnąć stare PolskiWhisper.app pobrane z DMG i nie usunięte.
+            if !duplicateFinder.duplicates.isEmpty {
+                Section("Stare kopie aplikacji") {
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.title2)
+                            .foregroundStyle(.orange)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Znaleziono \(duplicateFinder.duplicates.count) starsze kopie aplikacji")
+                                .font(.headline)
+                            Text("Stare wersje pobrane z DMG i nieusunięte. Mogą powodować pomyłki przy uruchamianiu (kliknięcie złej kopii). Bezpiecznie przenieść do Kosza.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                    }
+
+                    ForEach(duplicateFinder.duplicates) { dup in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 6) {
+                                    Text(dup.location)
+                                        .font(.callout)
+                                        .fontWeight(.medium)
+                                    if let v = dup.version {
+                                        Text("v\(v)")
+                                            .font(.caption)
+                                            .padding(.horizontal, 4)
+                                            .background(Color.gray.opacity(0.2))
+                                            .cornerRadius(3)
+                                    }
+                                }
+                                Text(dup.url.path)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                            }
+                            Spacer()
+                            Text(dup.sizeFormatted)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Button {
+                                duplicateFinder.removeToTrash(dup)
+                            } label: {
+                                Image(systemName: "trash")
+                                    .foregroundStyle(.red)
+                            }
+                            .buttonStyle(.borderless)
+                        }
+                    }
+
+                    HStack {
+                        Button("Przenieś wszystkie do Kosza") {
+                            duplicateFinder.removeAllToTrash()
+                        }
+                        Spacer()
+                        Button("Sprawdź ponownie") {
+                            duplicateFinder.scan()
+                        }
+                        .controlSize(.small)
                     }
                 }
             }

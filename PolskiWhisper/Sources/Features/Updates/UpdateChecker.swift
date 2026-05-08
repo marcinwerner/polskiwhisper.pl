@@ -6,6 +6,7 @@
 //  See LICENSE in the repository root.
 //
 
+import AppKit
 import Foundation
 import Observation
 
@@ -59,6 +60,12 @@ final class UpdateChecker {
     /// Timestamp ostatniego sprawdzenia (do UI "Ostatnio sprawdzono...").
     private(set) var lastCheckedAt: Date?
 
+    /// Czy aktualnie trwa pobieranie i instalacja nowej wersji (auto-update flow).
+    private(set) var isDownloading: Bool = false
+
+    /// Komunikat o stanie auto-update (download/install error - widoczny w UI).
+    private(set) var downloadError: String?
+
     private init() {
         // Wczytaj ostatni check z persistencji
         if let date = UserDefaults.standard.object(forKey: Self.lastCheckKey) as? Date {
@@ -82,6 +89,139 @@ final class UpdateChecker {
     /// public dla testów/debug.
     func forceCheck() async {
         await performCheck()
+    }
+
+    /// Auto-update: pobiera DMG, generuje bash script który podmienia /Applications/PolskiWhisper.app
+    /// + restart, terminuje aktualną aplikację. User dostaje 1-click update zamiast ręcznego DMG flow.
+    ///
+    /// Działa **bez Apple Developer ID** (self-signed cert + script execution).
+    /// Background script czeka aż aplikacja umrze, potem mountuje DMG, kopiuje, restartuje.
+    func downloadAndInstall(_ updateInfo: UpdateInfo) async {
+        guard !isDownloading else { return }
+        guard let downloadURL = updateInfo.downloadURL else {
+            downloadError = "Brak DMG do pobrania w tym release"
+            return
+        }
+
+        isDownloading = true
+        downloadError = nil
+
+        do {
+            Log.app.info("Auto-update: pobieranie DMG z \(downloadURL.absoluteString, privacy: .public)")
+
+            // Pobierz DMG do cache
+            let (tempURL, _) = try await URLSession.shared.download(from: downloadURL)
+
+            let cacheDir = try FileManager.default.url(
+                for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true
+            ).appendingPathComponent("PolskiWhisper")
+            try? FileManager.default.createDirectory(at: cacheDir, withIntermediateDirectories: true)
+
+            let dmgURL = cacheDir.appendingPathComponent("update-\(updateInfo.version).dmg")
+            if FileManager.default.fileExists(atPath: dmgURL.path) {
+                try FileManager.default.removeItem(at: dmgURL)
+            }
+            try FileManager.default.moveItem(at: tempURL, to: dmgURL)
+
+            Log.app.info("Auto-update: DMG pobrany (\(dmgURL.path, privacy: .public))")
+
+            // Generate install script - czeka aż app umrze, mountuje, kopiuje, restartuje
+            let pid = ProcessInfo.processInfo.processIdentifier
+            let scriptURL = URL(fileURLWithPath: "/tmp/polskiwhisper-update-\(UUID().uuidString).sh")
+            let scriptContent = Self.installScript(
+                pid: pid,
+                dmgPath: dmgURL.path,
+                scriptPath: scriptURL.path
+            )
+
+            try scriptContent.write(to: scriptURL, atomically: true, encoding: .utf8)
+            try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: scriptURL.path)
+
+            // Spawn script (detached - przetrwa naszą śmierć)
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/bin/bash")
+            process.arguments = [scriptURL.path]
+            try process.run()
+
+            Log.app.info("Auto-update: install script uruchomiony - aplikacja zaraz się zamknie")
+
+            // Daj script chwilę na start watchera, potem terminate self
+            try? await Task.sleep(for: .milliseconds(500))
+            await MainActor.run {
+                NSApp.terminate(nil)
+            }
+
+        } catch {
+            Log.app.error("Auto-update: błąd \(error.localizedDescription, privacy: .public)")
+            downloadError = "Błąd pobierania: \(error.localizedDescription)"
+            isDownloading = false
+        }
+    }
+
+    /// Bash script template - czeka aż aplikacja umrze, mountuje DMG, podmienia .app, restartuje.
+    /// Plus sprząta stare residual mounty (pozostałość po wcześniejszych próbach).
+    private static func installScript(pid: Int32, dmgPath: String, scriptPath: String) -> String {
+        return """
+        #!/bin/bash
+        # PolskiWhisper auto-update script - generated \(Date().ISO8601Format())
+        set -e
+
+        OLD_PID=\(pid)
+        DMG_PATH="\(dmgPath)"
+        APP_PATH="/Applications/PolskiWhisper.app"
+        LOG="/tmp/polskiwhisper-update.log"
+
+        echo "[$(date)] Update script started, waiting for PID $OLD_PID to exit" > "$LOG"
+
+        # Czekaj aż stara aplikacja się zamknie (max 10s)
+        for i in {1..20}; do
+            if ! ps -p $OLD_PID > /dev/null 2>&1; then
+                break
+            fi
+            sleep 0.5
+        done
+
+        # Sprzątnij residual mounty z poprzednich prób (bez force-killu volumes z innymi appkami)
+        for vol in /Volumes/PolskiWhisper*; do
+            if [ -d "$vol" ]; then
+                hdiutil detach "$vol" -force 2>/dev/null || true
+            fi
+        done
+
+        # Mount nowy DMG
+        echo "[$(date)] Mounting DMG: $DMG_PATH" >> "$LOG"
+        MOUNT_POINT=$(hdiutil attach "$DMG_PATH" -nobrowse -noautoopen | tail -1 | awk '{for(i=3;i<=NF;i++) printf "%s%s", $i, (i==NF?"":" ")}')
+
+        if [ -z "$MOUNT_POINT" ] || [ ! -d "$MOUNT_POINT" ]; then
+            echo "[$(date)] ERROR: Failed to mount DMG" >> "$LOG"
+            exit 1
+        fi
+
+        echo "[$(date)] Mounted at: $MOUNT_POINT" >> "$LOG"
+
+        # Usuń stary
+        if [ -d "$APP_PATH" ]; then
+            echo "[$(date)] Removing old app at $APP_PATH" >> "$LOG"
+            rm -rf "$APP_PATH"
+        fi
+
+        # Skopiuj nowy
+        echo "[$(date)] Copying new app from $MOUNT_POINT" >> "$LOG"
+        cp -R "$MOUNT_POINT/PolskiWhisper.app" "$APP_PATH"
+
+        # Odmount
+        hdiutil detach "$MOUNT_POINT" -force 2>/dev/null || true
+
+        # Uruchom nowy
+        echo "[$(date)] Launching new app" >> "$LOG"
+        open "$APP_PATH"
+
+        # Sprzątnij DMG i siebie
+        rm -f "$DMG_PATH"
+        rm -f "\(scriptPath)"
+
+        echo "[$(date)] Update complete" >> "$LOG"
+        """
     }
 
     // MARK: - Internal
@@ -124,6 +264,17 @@ final class UpdateChecker {
             if isNewer(remote: info.version, current: currentVersion) {
                 Log.app.info("UpdateChecker: znaleziono nowszą wersję \(info.version, privacy: .public) (aktualna: \(currentVersion, privacy: .public))")
                 availableUpdate = info
+
+                // Native notification gdy update dostępny (jeśli user zezwolił)
+                NotificationDispatcher.shared.notifyUpdateAvailable(version: info.version)
+
+                // Auto-install jeśli user opt-in (default OFF)
+                if UserDefaults.standard.bool(forKey: AppCoordinator.Keys.autoUpdateEnabled) {
+                    Log.app.info("UpdateChecker: auto-update enabled - rozpoczynam pobieranie")
+                    Task { [weak self] in
+                        await self?.downloadAndInstall(info)
+                    }
+                }
             } else {
                 Log.app.info("UpdateChecker: brak nowej wersji (remote=\(info.version, privacy: .public), current=\(currentVersion, privacy: .public))")
                 availableUpdate = nil

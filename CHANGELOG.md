@@ -2,6 +2,27 @@
 
 Format zgodny z [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) + [Semantic Versioning](https://semver.org/lang/pl/).
 
+## [0.1.5] - 2026-05-08
+
+Aktualizacje są teraz proste. Jeden klik pobiera i instaluje nową wersję, aplikacja sprząta po sobie, a opcjonalnie sama dba o świeżość bez Twojej ingerencji.
+
+### Nowości
+
+- **Pobierz i zainstaluj jednym kliknięciem** - banner "Dostępna nowa wersja" w Ustawieniach ma teraz przycisk który pobiera DMG, zamyka aplikację, podmienia ją na nową i restartuje. Zero przeciągania plików w Finderze.
+- **Aktualizuj automatycznie (opcjonalne)** - włącz toggle w Ustawieniach → Aktualizacje, żeby aplikacja sama pobierała nowe wersje przy starcie. Bez Twojego klikania - po prostu uruchamiasz i masz najnowszą.
+- **Sprzątanie starych kopii** - aplikacja wykrywa stare wersje PolskiWhisper.app w typowych lokalizacjach (Pobrane, Pulpit, Aplikacje, ~/Applications, Dokumenty). Pokazuje listę z wersjami i rozmiarem - jednym kliknięciem przenosisz wszystko do Kosza.
+- **Powiadomienie systemowe** - gdy aplikacja wykryje nową wersję, dostaniesz natywne macOS notification (jeśli zezwolisz). Bez konieczności otwierania Ustawień.
+
+### Drobne ulepszenia
+
+- **Lepsza ochrona przed zacięciem** - jeśli Whisper z jakiegoś powodu utknie na transkrypcji, aplikacja teraz **na pewno** wraca do Ciebie po 30 sekundach z czytelnym komunikatem (wcześniej w rzadkich przypadkach widget mógł wisieć dłużej z powodu sposobu działania Swift concurrency).
+
+### Aktualizacja z poprzedniej wersji
+
+Tym razem wystarczy uruchomić aplikację i kliknąć "Pobierz i zainstaluj" w bannerze. Aplikacja sama zrobi resztę i otworzy się ponownie jako v0.1.5.
+
+Twoje ustawienia, słownik i pobrany model Whisper zostają na miejscu.
+
 ## [0.1.4] - 2026-05-08
 
 Większa kontrola nad aplikacją - sprawdzanie aktualizacji jednym kliknięciem, anulowanie nagrania klawiszem Escape, prostszy i bardziej intuicyjny słownik.

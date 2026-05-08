@@ -18,9 +18,13 @@ PolskiWhisper to **darmowe, lokalne narzędzie do promptowania głosowego dla ma
 - ✅ **Działa wszędzie** - Notatki, Slack, Claude, przeglądarka, Mail, terminal
 - ✅ **W pełni offline** po jednorazowym pobraniu modelu (~1.5 GB dla domyślnego Whisper Turbo)
 - ✅ **Konfigurowalny hotkey** (lewy/prawy Option, Command, Fn) + tryb toggle/przytrzymanie
-- ✅ **Słownictwo własne** - boost rozpoznawania nazw, reguły Find & Replace, eksport/import JSON
+- ✅ **ESC anuluje nagrywanie** - jeśli zmienisz zdanie podczas mówienia
+- ✅ **Słownik z regułami Find & Replace** - twoje osobiste poprawki (np. "ofertika" → "Ofertica"), drag-and-drop kolejność, edycja in-place
+- ✅ **Wybór dźwięków** - 9 systemowych dźwięków macOS, osobno dla startu i zakończenia
+- ✅ **Auto-spacing** - przy nagrywaniu na raty automatycznie dodaje spację po kropce
 - ✅ **Real-time waveform** - widzisz na żywo poziom dźwięku podczas mówienia
 - ✅ **Inteligentne wykrywanie ciszy** - jeśli nic nie powiesz, nic się nie wkleja
+- ✅ **Auto-update** - jeden klik pobiera i instaluje nową wersję (opcjonalnie sama, bez pytania)
 - ✅ **Zero telemetrii** - audytowalny kod, polski autor, MIT license
 
 ## Wymagania
@@ -138,6 +142,6 @@ Cześć, PolskiWhisper jest projektem hobbystycznym side-project. Bez Apple Deve
 
 ---
 
-**Status**: ✅ v0.1 - MVP gotowy do użycia. Funkcjonalny, stabilny, polski.
+**Status**: ✅ Stabilny - aplikacja używana codziennie, regularnie aktualizowana, otwarta na zgłoszenia.
 
 *PolskiWhisper © 2026 Marcin Werner. Aplikacja jest darmowa i open source.*

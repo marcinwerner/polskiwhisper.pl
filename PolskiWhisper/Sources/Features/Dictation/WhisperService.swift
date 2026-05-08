@@ -217,25 +217,70 @@ final class WhisperService {
     /// - Returns: transkrybowany tekst (po polsku)
     /// - Throws: `WhisperError.transcriptionTimeout` gdy decoding > 30s (decoder hell protection)
     func transcribe(audioFileURL: URL, initialPrompt: String? = nil) async throws -> String {
-        // j1 timeout: race transcribe vs sleep(30s). Chroni UX przed decoder hell
-        // (108s zaobserwowane). Po timeout WhisperKit task wciąż może lecieć w tle,
-        // ale user widzi error + widget się zamyka - może natychmiast spróbować ponownie.
-        try await withThrowingTaskGroup(of: String.self) { group in
-            group.addTask { [weak self] in
-                guard let self else { throw WhisperError.modelNotLoaded }
-                return try await self.transcribeImpl(audioFileURL: audioFileURL, initialPrompt: initialPrompt)
-            }
-            group.addTask {
-                try await Task.sleep(for: .seconds(Self.transcriptionTimeoutSeconds))
-                Log.whisper.error("Transcription timeout after \(Self.transcriptionTimeoutSeconds)s - aborting")
-                throw WhisperError.transcriptionTimeout(seconds: Self.transcriptionTimeoutSeconds)
+        // j1 timeout: race transcribe vs 30s timeout używając CheckedContinuation.
+        //
+        // **Dlaczego nie withThrowingTaskGroup**: Swift `withThrowingTaskGroup` cancel'uje
+        // child tasks gdy jeden rzuci, ALE czeka na ich completion przed rethrow.
+        // WhisperKit `transcribe` NIE reaguje na cancel (decoder pętla nie sprawdza
+        // Task.isCancelled), więc rethrow czeka aż decoder skończy = aplikacja wisi.
+        //
+        // **Rozwiązanie**: ChceckedContinuation + manual lock-protected race. Pierwsza
+        // strona resolved (transcribe success/error LUB timeout) wygrywa. Drugi task
+        // wciąż leci w tle (background decoder dokończy) ale user dostaje error po 30s.
+        let timeoutSec = Self.transcriptionTimeoutSeconds
+
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
+            let resolver = TimeoutResolver(continuation: continuation)
+
+            // Task A: faktyczny transcribe (background, może wisieć w decoder hell).
+            Task { @MainActor [weak self] in
+                guard let self else {
+                    resolver.resume(.failure(WhisperError.modelNotLoaded))
+                    return
+                }
+                do {
+                    let result = try await self.transcribeImpl(audioFileURL: audioFileURL, initialPrompt: initialPrompt)
+                    resolver.resume(.success(result))
+                } catch {
+                    resolver.resume(.failure(error))
+                }
             }
 
-            guard let result = try await group.next() else {
-                throw WhisperError.transcriptionTimeout(seconds: Self.transcriptionTimeoutSeconds)
+            // Task B: timeout watchdog - wygrywa gdy A wisi.
+            Task {
+                try? await Task.sleep(for: .seconds(timeoutSec))
+                Log.whisper.error("""
+                    Transcription timeout after \(timeoutSec, privacy: .public)s - returning error to user \
+                    (background decoder may continue)
+                    """)
+                resolver.resume(.failure(WhisperError.transcriptionTimeout(seconds: timeoutSec)))
             }
-            group.cancelAll()
-            return result
+        }
+    }
+
+    /// Pomocnik do "first wins" race pattern dla `withCheckedThrowingContinuation`.
+    /// CheckedContinuation MUSI być wywołany dokładnie raz - klasa zapewnia tę gwarancję
+    /// poprzez NSLock + flag `resolved`.
+    private final class TimeoutResolver: @unchecked Sendable {
+        private let lock = NSLock()
+        private var resolved = false
+        private let continuation: CheckedContinuation<String, Error>
+
+        init(continuation: CheckedContinuation<String, Error>) {
+            self.continuation = continuation
+        }
+
+        func resume(_ result: Result<String, Error>) {
+            lock.lock()
+            defer { lock.unlock() }
+            guard !resolved else { return }
+            resolved = true
+            switch result {
+            case .success(let value):
+                continuation.resume(returning: value)
+            case .failure(let error):
+                continuation.resume(throwing: error)
+            }
         }
     }
 

@@ -112,6 +112,13 @@ final class AppCoordinator {
             await engine.preloadModel()
         }
 
+        // Skanuje typowe lokalizacje pod kątem starych kopii PolskiWhisper.app.
+        // User po pobraniu DMG często zostawia plik w Downloads / Desktop - aplikacja
+        // pomaga sprzątnąć (banner w Settings). Zero koszt dla większości userów (brak duplikatów).
+        Task { @MainActor in
+            DuplicateAppFinder.shared.scan()
+        }
+
         Log.coordinator.info("AppCoordinator services initialized")
     }
 
@@ -198,6 +205,7 @@ final class AppCoordinator {
         static let launchAtLogin = "launchAtLogin"
         static let maxRecordingDuration = "maxRecordingDurationSeconds"
         static let showInDock = "showInDock"
+        static let autoUpdateEnabled = "autoUpdateEnabled"  // opt-in auto-install nowych wersji
     }
 
     /// Czy aplikacja pokazuje ikonę w Docku.
