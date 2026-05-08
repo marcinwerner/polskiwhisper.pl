@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using PolskiWhisperWin.Core.Models;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 using PolskiWhisperWin.Core.Services;
 using PolskiWhisperWin.Core.Utilities;
 using PolskiWhisperWin.Features.Dictation;
