@@ -25,6 +25,7 @@ public interface IUpdateChecker
     /// </summary>
     /// <param name="updateInfo">Info z <see cref="CheckForUpdateAsync"/>.</param>
     /// <param name="progress">Reporter postępu pobierania (0..1).</param>
+    /// <param name="cancellationToken">Anuluje pobieranie.</param>
     Task<string> DownloadInstallerAsync(
         UpdateInfo updateInfo,
         IProgress<double>? progress = null,

@@ -18,6 +18,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="PolskiWhisperWin.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Whisper.net" Version="1.5.0" />
     <PackageReference Include="Whisper.net.Runtime" Version="1.5.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.4" />
