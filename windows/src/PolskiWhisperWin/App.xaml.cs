@@ -68,7 +68,7 @@ public partial class App : Application
         _settingsWindow.BringToFront();
     }
 
-    private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+    private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
     {
         Coordinator?.Logger?.LogCritical(e.Exception, "Unhandled exception w UI thread.");
         CrashHandler.LogToFile(e.Exception);
