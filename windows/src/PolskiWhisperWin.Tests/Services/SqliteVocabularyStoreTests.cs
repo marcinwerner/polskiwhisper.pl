@@ -77,9 +77,11 @@ public class SqliteVocabularyStoreTests : IAsyncLifetime
     public async Task UpdateRule_ChangesPersisted()
     {
         var added = await _sut.AddRuleAsync(new FindReplaceRule(0, "x", "X", false, false, 0, DateTime.UtcNow));
-        var updated = added with { ReplaceWith = "XYZ", IsRegex = true };
+        // FindReplaceRule jest klasa (XAML data binding wymaga setterow) - mutacja inline zamiast `with`.
+        added.ReplaceWith = "XYZ";
+        added.IsRegex = true;
 
-        await _sut.UpdateRuleAsync(updated);
+        await _sut.UpdateRuleAsync(added);
 
         var rules = await _sut.GetAllRulesAsync();
         rules.Should().HaveCount(1);
