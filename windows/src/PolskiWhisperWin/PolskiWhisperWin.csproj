@@ -71,7 +71,6 @@
     Wyłączone: pozostałe XAML pages + .cs (poniżej).
   -->
   <ItemGroup>
-    <Page Remove="Features\UI\Pages\VocabularySettingsPage.xaml" />
     <Page Remove="Features\UI\Floating\FloatingDictationWindow.xaml" />
     <Page Remove="Onboarding\OnboardingWindow.xaml" />
     <Page Remove="Onboarding\Steps\WelcomeStep.xaml" />
@@ -80,12 +79,9 @@
     <Page Remove="Onboarding\Steps\HotkeyStep.xaml" />
     <Page Remove="Onboarding\Steps\FinishStep.xaml" />
 
-    <Compile Remove="Features\UI\Pages\VocabularySettingsPage.xaml.cs" />
     <Compile Remove="Features\UI\Floating\FloatingDictationWindow.xaml.cs" />
     <Compile Remove="Onboarding\**\*.cs" />
 
-    <None Include="Features\UI\Pages\VocabularySettingsPage.xaml" />
-    <None Include="Features\UI\Pages\VocabularySettingsPage.xaml.cs" />
     <None Include="Features\UI\Floating\FloatingDictationWindow.xaml" />
     <None Include="Features\UI\Floating\FloatingDictationWindow.xaml.cs" />
     <None Include="Onboarding\**\*.xaml" />
