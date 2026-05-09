@@ -79,10 +79,12 @@ public sealed class DuplicateAppFinder
                         try
                         {
                             var info = new FileInfo(exe);
-                            duplicates.Add(new DuplicateApp(
-                                Path: exe,
-                                SizeBytes: info.Length,
-                                LastModified: info.LastWriteTime));
+                            duplicates.Add(new DuplicateApp
+                            {
+                                Path = exe,
+                                SizeBytes = info.Length,
+                                LastModified = info.LastWriteTime
+                            });
                         }
                         catch (Exception ex)
                         {
@@ -159,4 +161,16 @@ public sealed class DuplicateAppFinder
 /// <param name="Path">Pełna ścieżka do exe.</param>
 /// <param name="SizeBytes">Rozmiar pliku.</param>
 /// <param name="LastModified">Data ostatniej modyfikacji.</param>
-public sealed record DuplicateApp(string Path, long SizeBytes, DateTime LastModified);
+/// <summary>
+/// Znaleziona kopia PolskiWhisper.exe poza standardową lokalizacją.
+/// </summary>
+/// <remarks>
+/// Klasa (nie record) bo XAML data binding wymaga settable properties (XamlTypeInfo.g.cs
+/// generuje code-behind który próbuje setować właściwości po construction).
+/// </remarks>
+public sealed class DuplicateApp
+{
+    public string Path { get; set; } = string.Empty;
+    public long SizeBytes { get; set; }
+    public DateTime LastModified { get; set; }
+}
