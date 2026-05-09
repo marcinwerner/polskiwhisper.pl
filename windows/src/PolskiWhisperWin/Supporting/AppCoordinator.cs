@@ -247,7 +247,8 @@ public sealed class AppCoordinator
         services.AddSingleton<DuplicateAppFinder>();
         services.AddSingleton<LaunchAtLoginManager>();
         services.AddSingleton<SelfUpdateInstaller>();
-        // v0.1.0: TrayIconController, NotificationDispatcher, SoundService wyłączone w csproj
+        services.AddSingleton<UI.SoundService>();
+        // v0.1.0: TrayIconController, NotificationDispatcher wyłączone w csproj
         // (zależą od UI Pages które są tymczasowo disabled).
 
         // Orchestrator.
