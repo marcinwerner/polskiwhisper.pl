@@ -8,23 +8,47 @@ namespace PolskiWhisperWin.Core.Models;
 /// Reguła Znajdź i zamień. Pojedynczy wpis w słowniku użytkownika.
 /// Mapping 1:1 do macOS <c>FindReplaceRule</c> (tabela <c>find_replace_rule</c>).
 /// </summary>
-/// <param name="Id">Klucz główny w SQLite (auto-increment).</param>
-/// <param name="FindText">Wzorzec do znalezienia (literal lub regex).</param>
-/// <param name="ReplaceWith">Tekst zastępujący.</param>
-/// <param name="IsRegex">Czy traktować <see cref="FindText"/> jako wyrażenie regularne (.NET regex).</param>
-/// <param name="CaseSensitive">Czy uwzględniać wielkość liter podczas dopasowania.</param>
-/// <param name="OrderIndex">Kolejność zastosowania reguł (rosnąco). Drag-and-drop modyfikuje tę wartość.</param>
-/// <param name="CreatedAt">Timestamp utworzenia (UTC).</param>
-public sealed record FindReplaceRule(
-    long Id,
-    string FindText,
-    string ReplaceWith,
-    bool IsRegex,
-    bool CaseSensitive,
-    int OrderIndex,
-    DateTime CreatedAt
-)
+/// <remarks>
+/// Klasa (nie record) bo XAML data binding wymaga settable properties (XamlTypeInfo.g.cs
+/// generuje code-behind który próbuje setować właściwości po construction).
+/// Zachowano positional constructor dla kompatybilności z istniejącymi callsites + testami.
+/// </remarks>
+public sealed class FindReplaceRule
 {
+    /// <summary>Klucz główny w SQLite (auto-increment).</summary>
+    public long Id { get; set; }
+
+    /// <summary>Wzorzec do znalezienia (literal lub regex).</summary>
+    public string FindText { get; set; } = string.Empty;
+
+    /// <summary>Tekst zastępujący.</summary>
+    public string ReplaceWith { get; set; } = string.Empty;
+
+    /// <summary>Czy traktować <see cref="FindText"/> jako wyrażenie regularne (.NET regex).</summary>
+    public bool IsRegex { get; set; }
+
+    /// <summary>Czy uwzględniać wielkość liter podczas dopasowania.</summary>
+    public bool CaseSensitive { get; set; }
+
+    /// <summary>Kolejność zastosowania reguł (rosnąco). Drag-and-drop modyfikuje tę wartość.</summary>
+    public int OrderIndex { get; set; }
+
+    /// <summary>Timestamp utworzenia (UTC).</summary>
+    public DateTime CreatedAt { get; set; }
+
+    public FindReplaceRule() { }
+
+    public FindReplaceRule(long id, string findText, string replaceWith, bool isRegex, bool caseSensitive, int orderIndex, DateTime createdAt)
+    {
+        Id = id;
+        FindText = findText;
+        ReplaceWith = replaceWith;
+        IsRegex = isRegex;
+        CaseSensitive = caseSensitive;
+        OrderIndex = orderIndex;
+        CreatedAt = createdAt;
+    }
+
     /// <summary>Pusta reguła do tworzenia nowej w UI (ID == 0 oznacza "nowa, jeszcze nie zapisana").</summary>
     public static FindReplaceRule Empty => new(0, string.Empty, string.Empty, false, false, 0, DateTime.UtcNow);
 
