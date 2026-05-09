@@ -429,7 +429,7 @@ Jeśli masz wątpliwość czy "wystarczająco wymaksowane" - dorzuć następną 
 
 ## Pytania do uściślenia (zadaj Marcinowi przed startem)
 
-Zacznij sesję od zadania tych 6 pytań i CZEKAJ na odpowiedzi PRZED kodowaniem:
+Zacznij sesję od zadania tych 7 pytań i CZEKAJ na odpowiedzi PRZED kodowaniem:
 
 - **a)** **Branding**: czy jest gdzieś logo / mark dla PolskiWhisper, czy generujemy podstawowe (typograficzne)?
 - **b)** **Kolor accent**: ciepły (orange/coral) jak Claude brand, polski czerwony, czy neutral monochrome?
@@ -437,6 +437,10 @@ Zacznij sesję od zadania tych 6 pytań i CZEKAJ na odpowiedzi PRZED kodowaniem:
 - **d)** **WebGPU demo**: czy chcesz interaktywne (opóźnia LCP, zwiększa złożoność, ~75 MB) czy pre-recorded loop video (szybsze, prostsze)?
 - **e)** **Newsletter / waitlist**: tak / nie?
 - **f)** **Affiliate w stopce**: "Made by Marcin Werner" + link do strony Marcina, czy bez personal branding?
+- **g)** **Lokalizacja kodu strony**:
+  - **g1)** Mono-repo: kod w `polskiwhisper.pl/www/site/` (Next.js root tego repo). Vercel deploy z subdirectory. Plus: jeden git, jeden CHANGELOG-tematyczny, all-in-one. Minus: mieszanie kontekstu macOS/Windows/web (CI build matrix robi się skomplikowane).
+  - **g2)** Multi-repo: osobny repo `polskiwhisper-landing` (pod kontem Marcina na GitHub). Plus: czysty podział odpowiedzialności, łatwiejsze zarządzanie release cyclami. Minus: dwa miejsca do utrzymania, dwa CI workflow.
+  - **Rekomendacja agenta**: g1 (mono-repo) - hobby project, jeden właściciel, prostsze. Vercel obsługuje deploy z subdir bez problemu. Ale to twoja decyzja, Marcin.
 
 ## Co działa "out of the box" w tym briefie
 

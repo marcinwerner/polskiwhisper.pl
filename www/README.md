@@ -4,15 +4,17 @@ Ten katalog zawiera **kompletny brief** do zbudowania landing page dla projektu 
 
 Strona zostanie zbudowana w **osobnym repo** (`polskiwhisper-landing`) - ten katalog to tylko źródło prawdy: brief, wytyczne, materiały content. Po zbudowaniu landing page repo apki nie zawiera kodu strony, tylko ten brief.
 
+Domyślny workflow uruchomienia nowej sesji: **working directory = `~/Documents/GitHub/polskiwhisper.pl/`** (folder repo apki). Nowa sesja ma full access do kodu macOS/Windows, dokumentacji, briefu - czyta brief z `www/`, czyta materiały źródłowe (README/CHANGELOG) z root repo, koduje stronę zgodnie z odpowiedzią na pytanie 7g w briefie.
+
 ## Co tu jest
 
 | Plik | Co zawiera | Dla kogo |
 |------|------------|----------|
-| **PROMPT.md** | Krótki prompt do wklejenia w nowej sesji Claude Code | Marcin |
-| **01-BRIEF.md** | Główny brief: cel, stack, sekcje, animacje, performance, quality bar | Agent (nowa sesja) |
+| **PROMPT.md** | Krótki prompt do wklejenia w nowej sesji Claude Code Desktop | Marcin |
+| **01-BRIEF.md** | Główny brief: cel, stack, sekcje, animacje, performance, quality bar, 7 pytań do uściślenia | Agent (nowa sesja) |
 | **02-CONTENT.md** | Źródła treści: linki do README, CHANGELOG, FAQ, fakty o aplikacji | Agent |
 | **03-BRAND.md** | Wytyczne wizualne: kolory, typografia, ton, copywriting | Agent |
-| **04-DEPLOYMENT.md** | Vercel + DNS Cloudflare + env vars + monitoring | Agent / DevOps |
+| **04-DEPLOYMENT.md** | Vercel + DNS Cloudflare + env vars + monitoring (mono-repo i multi-repo warianty) | Agent / DevOps |
 
 ## Jak użyć
 

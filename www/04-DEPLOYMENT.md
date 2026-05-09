@@ -6,13 +6,37 @@
 
 ## Repository setup
 
-### Konwencja nazewnictwa
+### Lokalizacja kodu - dwie opcje (decyzja Marcina, pytanie 7g w 01-BRIEF.md)
 
-**Repo**: `polskiwhisper-landing` (osobne od głównego apka repo `polskiwhisper.pl`)
+**Opcja A - mono-repo (rekomendowane)**:
+- Lokalizacja: `polskiwhisper.pl/www/site/` (kod) + `polskiwhisper.pl/www/*.md` (brief)
+- Vercel: deploy z subdirectory `www/site`, Root Directory ustawiana w project settings
+- Git: ten sam repo co apka, jeden CHANGELOG, prostsze
+- CI: branch protection per path (np. zmiany w `www/**` triggerują landing build, `windows/**` triggerują Windows CI)
 
-**Pytanie do Marcina przed utworzeniem**: per global rule "PYTAJ O ZGODĘ NA KLUCZOWE NAZWY" - **agencie, zaproponuj nazwę i czekaj na akcept Marcina** zanim utworzysz repo.
+**Opcja B - multi-repo**:
+- Lokalizacja: osobny repo `polskiwhisper-landing` (nazwa wymaga akceptacji Marcina)
+- Vercel: standardowy deploy z root
+- Git: osobne historie, niezależne release cycle
+- CI: prostsze (single-purpose workflow)
 
-### Inicjalizacja
+### Konwencja nazewnictwa (jeśli multi-repo)
+
+**Repo**: `polskiwhisper-landing` - **propozycja**, Marcin musi zaakceptować przed utworzeniem (per global rule "PYTAJ O ZGODĘ NA KLUCZOWE NAZWY").
+
+### Inicjalizacja (warianty per opcja A/B)
+
+**Opcja A** (mono-repo, kod w `polskiwhisper.pl/www/site/`):
+
+```bash
+# Z working dir = polskiwhisper.pl/
+mkdir -p www/site
+cd www/site
+
+# Reszta jak poniżej (npx create-next-app...)
+```
+
+**Opcja B** (multi-repo, osobny `polskiwhisper-landing`):
 
 ```bash
 mkdir -p ~/Documents/GitHub/polskiwhisper-landing
