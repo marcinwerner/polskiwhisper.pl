@@ -95,12 +95,8 @@
     <None Include="Onboarding\**\*.cs" />
   </ItemGroup>
 
-  <!-- W placeholder v0.1.0 wyłączone TrayIconController (H.NotifyIcon, czeka).
-       SoundService aktywny od 2026-05-09. NotificationDispatcher aktywny od 2026-05-09. -->
-  <ItemGroup>
-    <Compile Remove="Features\UI\TrayIconController.cs" />
-    <None Include="Features\UI\TrayIconController.cs" />
-  </ItemGroup>
+  <!-- Wszystkie .cs services aktywne od 2026-05-09: SoundService, NotificationDispatcher, TrayIconController. -->
+
 
   <ItemGroup>
     <Content Include="Assets\AppIcon.ico" Condition="Exists('Assets\AppIcon.ico')">

@@ -257,7 +257,7 @@ public sealed class AppCoordinator
         services.AddSingleton<SelfUpdateInstaller>();
         services.AddSingleton<SoundService>();
         services.AddSingleton<NotificationDispatcher>();
-        // v0.1.0: TrayIconController wyłączone w csproj (H.NotifyIcon, czeka na FloatingWindow).
+        services.AddSingleton<TrayIconController>();
 
         // Orchestrator.
         services.AddSingleton<DictationEngine>();
