@@ -74,7 +74,6 @@
     <Page Remove="Features\UI\Pages\GeneralSettingsPage.xaml" />
     <Page Remove="Features\UI\Pages\WhisperSettingsPage.xaml" />
     <Page Remove="Features\UI\Pages\VocabularySettingsPage.xaml" />
-    <Page Remove="Features\UI\Pages\AboutPage.xaml" />
     <Page Remove="Features\UI\Floating\FloatingDictationWindow.xaml" />
     <Page Remove="Onboarding\OnboardingWindow.xaml" />
     <Page Remove="Onboarding\Steps\WelcomeStep.xaml" />
@@ -83,12 +82,18 @@
     <Page Remove="Onboarding\Steps\HotkeyStep.xaml" />
     <Page Remove="Onboarding\Steps\FinishStep.xaml" />
 
-    <Compile Remove="Features\UI\Pages\**\*.cs" />
+    <Compile Remove="Features\UI\Pages\GeneralSettingsPage.xaml.cs" />
+    <Compile Remove="Features\UI\Pages\WhisperSettingsPage.xaml.cs" />
+    <Compile Remove="Features\UI\Pages\VocabularySettingsPage.xaml.cs" />
     <Compile Remove="Features\UI\Floating\FloatingDictationWindow.xaml.cs" />
     <Compile Remove="Onboarding\**\*.cs" />
 
-    <None Include="Features\UI\Pages\**\*.xaml" />
-    <None Include="Features\UI\Pages\**\*.xaml.cs" />
+    <None Include="Features\UI\Pages\GeneralSettingsPage.xaml" />
+    <None Include="Features\UI\Pages\GeneralSettingsPage.xaml.cs" />
+    <None Include="Features\UI\Pages\WhisperSettingsPage.xaml" />
+    <None Include="Features\UI\Pages\WhisperSettingsPage.xaml.cs" />
+    <None Include="Features\UI\Pages\VocabularySettingsPage.xaml" />
+    <None Include="Features\UI\Pages\VocabularySettingsPage.xaml.cs" />
     <None Include="Features\UI\Floating\FloatingDictationWindow.xaml" />
     <None Include="Features\UI\Floating\FloatingDictationWindow.xaml.cs" />
     <None Include="Onboarding\**\*.xaml" />

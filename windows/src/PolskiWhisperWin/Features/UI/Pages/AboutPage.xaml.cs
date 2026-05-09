@@ -4,8 +4,10 @@
 
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using PolskiWhisperWin.Features.Updates;
