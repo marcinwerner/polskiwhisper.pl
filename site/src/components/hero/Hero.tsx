@@ -4,7 +4,6 @@ import { Apple, MonitorDot, ArrowDown } from "lucide-react";
 import { motion, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
 import { Waveform } from "./Waveform";
-import { Typewriter } from "./Typewriter";
 
 // Direct asset URLs - GitHub counts each as a download
 const MACOS_RELEASE_URL =
@@ -96,21 +95,6 @@ export function Hero() {
           <br className="hidden sm:block" />
           Działa offline. Twoje audio nigdy nie opuszcza komputera.
         </motion.p>
-
-        {/* Demo box */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.7, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="mx-auto mt-10 max-w-md rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated)]/80 px-6 py-4 backdrop-blur-md shadow-[0_8px_32px_oklch(0.55_0.22_18/0.12)] float-slow"
-        >
-          <p className="text-sm text-[var(--color-fg-subtle)]">
-            Naciśnij hotkey i mów...
-          </p>
-          <p className="mt-1 text-lg font-medium">
-            <Typewriter />
-          </p>
-        </motion.div>
 
         {/* CTAs */}
         <motion.div

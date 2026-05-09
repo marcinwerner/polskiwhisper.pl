@@ -46,11 +46,11 @@ export default function Home() {
       <Navbar />
       <main id="main">
         <Hero />
+        <UseCases />
+        <WhisperDemo />
         <Calculator />
         <HowItWorks />
-        <UseCases />
         <Privacy />
-        <WhisperDemo />
         <Download />
         <Roadmap />
         <FAQ />
