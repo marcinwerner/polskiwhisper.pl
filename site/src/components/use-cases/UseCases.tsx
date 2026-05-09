@@ -15,55 +15,71 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/cn";
 
+// Per-case typing speed multiplier. Programista i pisarz - szybcy (touch typing).
+// Researcher - medium. Casual - wolniej.
 const CASES = [
   {
     icon: Code2,
     title: "Programista",
     scenario: "Komentarz w kodzie, prompt do AI, opis pull requesta.",
     text: "TODO naprawić ten endpoint żeby zwracał prawidłowe dane dla użytkowników z polskimi znakami w imieniu",
+    keyboardSpeed: 0.65, // pro touch typist
   },
   {
     icon: PenTool,
     title: "Pisarz",
     scenario: "Szkic artykułu, odpowiedź na maile, post na blog.",
-    text: "Trzeba napisać artykuł o nowych trendach w technologii, które zmieniają sposób w jaki pracujemy na co dzień.",
+    text: "Trzeba napisać artykuł o nowych trendach w technologii, które zmieniają sposób w jaki pracujemy.",
+    keyboardSpeed: 0.72, // doświadczony piszący
   },
   {
     icon: BookOpen,
     title: "Researcher",
     scenario: "Notatki z PDFa, cytowanie źródeł, streszczenie artykułu.",
-    text: "Według badań Kowalskiego z 2024 roku, zastosowanie modeli językowych w analizie tekstu zwiększa efektywność o 40%.",
+    text: "Średnia osoba pisze 40 słów na minutę, mówi 140. Stenografistki sądowe biją rekord przy 360 słów na minutę.",
+    keyboardSpeed: 0.95, // skupiony, ale dokładny
   },
   {
     icon: MessageSquare,
     title: "Każdy",
     scenario: "Slack, Discord, komentarze, wiadomości.",
-    text: "Dzięki za info, sprawdzę i dam znać do końca dnia. Brzmi dobrze, lecimy z tym.",
+    text: "Słuchaj, rozważam zmianę pracy. Ten projekt wykańcza mnie psychicznie. Co o tym myślisz?",
+    keyboardSpeed: 1.05, // casual, czasem hunt-and-peck
   },
 ] as const;
 
-// Realistic timings: speech at ~140 WPM, Whisper processing on M1 ~600-900ms
-const SPEECH_WPM = 140; // average natural speech rate
-const SPEECH_MS_PER_WORD = 60_000 / SPEECH_WPM; // ~428ms
-const PROCESSING_MS = 700; // realistic Whisper-on-M1 transcription delay
+// Realistic timings - voice 20% faster than original (168 WPM = energetic native speaker),
+// keyboard derived from per-case speed
+const SPEECH_WPM = 168; // 20% faster than 140 baseline
+const SPEECH_MS_PER_WORD = 60_000 / SPEECH_WPM; // ~357ms
+const PROCESSING_MS = 560; // 20% faster than 700ms
 const KEYBOARD_SPEED_RATIO = 3; // Stanford 2016: speech is 3x faster
+const KEYBOARD_GLOBAL_SPEEDUP = 0.8; // additional 20% faster on keyboard
 const POST_FINISH_HOLD = 2800; // ms to hold final state before next case
 
-// Natural typing variability
-const KEYBOARD_JITTER_MIN = 0.6;
-const KEYBOARD_JITTER_MAX = 1.5;
-const PAUSE_EVERY_MIN_CHARS = 8;
-const PAUSE_EVERY_MAX_CHARS = 18;
-const PAUSE_DURATION_MIN = 180;
-const PAUSE_DURATION_MAX = 480;
-const TYPO_PROBABILITY = 0.08; // 8% of words have a typo to correct
-const TYPO_BACKSPACE_DELAY = [60, 120] as const; // ms
+// Natural typing variability - more dramatic now
+const KEYBOARD_JITTER_MIN = 0.45;
+const KEYBOARD_JITTER_MAX = 1.85;
+const PAUSE_EVERY_MIN_CHARS = 7;
+const PAUSE_EVERY_MAX_CHARS = 22;
+const PAUSE_DURATION_MIN = 140;
+const PAUSE_DURATION_MAX = 520;
+// Occasional longer "thinking" pauses
+const LONG_PAUSE_PROBABILITY = 0.12;
+const LONG_PAUSE_DURATION_MIN = 700;
+const LONG_PAUSE_DURATION_MAX = 1400;
+// Typos - higher rate now, sometimes left uncorrected (lazy)
+const TYPO_PROBABILITY = 0.14;
+const TYPO_LEAVE_UNCORRECTED_RATIO = 0.35; // 35% of typos NOT fixed (stays as typo)
+const TYPO_BACKSPACE_DELAY = [60, 140] as const; // ms
 
-function pickTimings(text: string) {
+function pickTimings(text: string, kbSpeed: number) {
   const words = text.split(/\s+/).filter(Boolean).length;
   const voiceSpeakingMs = words * SPEECH_MS_PER_WORD;
   const voiceTotalMs = voiceSpeakingMs + PROCESSING_MS;
-  const keyboardTotalMs = voiceTotalMs * KEYBOARD_SPEED_RATIO;
+  // Keyboard total: voice * Stanford ratio * global 20% speedup * per-case speed factor
+  const keyboardTotalMs =
+    voiceTotalMs * KEYBOARD_SPEED_RATIO * KEYBOARD_GLOBAL_SPEEDUP * kbSpeed;
   const baseCharDelayMs = keyboardTotalMs / Math.max(1, text.length);
   return { voiceSpeakingMs, voiceTotalMs, keyboardTotalMs, baseCharDelayMs };
 }
@@ -133,7 +149,7 @@ export function UseCases() {
   useEffect(() => {
     const item = CASES[current];
     const { voiceSpeakingMs, voiceTotalMs, keyboardTotalMs, baseCharDelayMs } =
-      pickTimings(item.text);
+      pickTimings(item.text, item.keyboardSpeed);
 
     // Reset all state for new case
     setKeyboardText("");
@@ -227,59 +243,84 @@ export function UseCases() {
         }
         visualizerRafRef.current = requestAnimationFrame(visualizerTick);
 
-        // Keyboard typing - natural with jitter, pauses, occasional typos
-        // Plan: build a sequence of "actions" upfront for the full text
+        // Keyboard typing - natural with jitter, pauses, typos (sometimes corrected, sometimes left)
+        // Each action is a single atomic step - displayed text accumulates as user sees it.
         type Action =
-          | { type: "char"; ch: string; delay: number }
-          | { type: "typo"; wrong: string; delay: number }
+          | { type: "append"; ch: string; delay: number }
           | { type: "backspace"; delay: number };
 
         const actions: Action[] = [];
         let charsUntilPause = randInt(PAUSE_EVERY_MIN_CHARS, PAUSE_EVERY_MAX_CHARS);
         let wordChars = 0;
+        let typosLeftCount = 0;
+        const maxLeftTypos = 1;
 
         for (let i = 0; i < item.text.length; i++) {
           const ch = item.text[i];
           const isWordBoundary = ch === " " || ch === "," || ch === "." || ch === "-";
 
-          // Per-char delay with jitter
+          // Per-char delay with broader jitter
           const jitter = randFloat(KEYBOARD_JITTER_MIN, KEYBOARD_JITTER_MAX);
           let delay = baseCharDelayMs * jitter;
 
-          // Insert occasional thinking pause before this char
+          // Occasional thinking pauses (some short, rare longer "real" thinking)
           charsUntilPause--;
           if (charsUntilPause <= 0 && i > 3 && i < item.text.length - 3) {
-            delay += randFloat(PAUSE_DURATION_MIN, PAUSE_DURATION_MAX);
+            if (Math.random() < LONG_PAUSE_PROBABILITY) {
+              delay += randFloat(LONG_PAUSE_DURATION_MIN, LONG_PAUSE_DURATION_MAX);
+            } else {
+              delay += randFloat(PAUSE_DURATION_MIN, PAUSE_DURATION_MAX);
+            }
             charsUntilPause = randInt(PAUSE_EVERY_MIN_CHARS, PAUSE_EVERY_MAX_CHARS);
           }
 
-          // Maybe inject a typo at start of word
+          // Maybe inject a typo at start of a word
           if (
             !isWordBoundary &&
             wordChars === 0 &&
-            i > 0 &&
-            i < item.text.length - 4 &&
+            i > 1 &&
+            i < item.text.length - 5 &&
             Math.random() < TYPO_PROBABILITY
           ) {
             const wrong = pickTypo(ch);
             if (wrong && wrong !== ch) {
-              actions.push({ type: "typo", wrong, delay });
-              actions.push({
-                type: "backspace",
-                delay: randFloat(TYPO_BACKSPACE_DELAY[0], TYPO_BACKSPACE_DELAY[1]),
-              });
-              // The correct char follows with a small recovery delay
-              delay = randFloat(80, 160);
+              const leaveIt =
+                typosLeftCount < maxLeftTypos &&
+                Math.random() < TYPO_LEAVE_UNCORRECTED_RATIO;
+
+              if (leaveIt) {
+                // Type wrong char, leave it (no backspace, just advance to next)
+                actions.push({ type: "append", ch: wrong, delay });
+                typosLeftCount++;
+                if (isWordBoundary) wordChars = 0;
+                else wordChars++;
+                continue;
+              } else {
+                // Type wrong, brief pause, backspace, brief pause, type correct
+                actions.push({ type: "append", ch: wrong, delay });
+                actions.push({
+                  type: "backspace",
+                  delay: randFloat(TYPO_BACKSPACE_DELAY[0], TYPO_BACKSPACE_DELAY[1]),
+                });
+                actions.push({
+                  type: "append",
+                  ch,
+                  delay: randFloat(80, 200),
+                });
+                if (isWordBoundary) wordChars = 0;
+                else wordChars++;
+                continue;
+              }
             }
           }
 
-          actions.push({ type: "char", ch, delay });
+          actions.push({ type: "append", ch, delay });
 
           if (isWordBoundary) wordChars = 0;
           else wordChars++;
         }
 
-        // Execute action sequence
+        // Execute action sequence - functional setState so left-typos persist
         let actionIdx = 0;
         function runNextAction() {
           if (actionIdx >= actions.length) {
@@ -292,17 +333,10 @@ export function UseCases() {
           }
           const a = actions[actionIdx];
           charTimerRef.current = setTimeout(() => {
-            if (a.type === "char") {
-              charIndexRef.current += 1;
-              setKeyboardText(item.text.slice(0, charIndexRef.current));
-            } else if (a.type === "typo") {
-              // Show current text + wrong char appended
-              setKeyboardText(
-                item.text.slice(0, charIndexRef.current) + a.wrong
-              );
+            if (a.type === "append") {
+              setKeyboardText((prev) => prev + a.ch);
             } else if (a.type === "backspace") {
-              // Remove the typo char (back to confirmed text)
-              setKeyboardText(item.text.slice(0, charIndexRef.current));
+              setKeyboardText((prev) => prev.slice(0, -1));
             }
             actionIdx++;
             runNextAction();
@@ -632,60 +666,77 @@ function VoiceWindow({
           {formatTime(displayedTime)}
         </div>
       </div>
-      <div className="mt-4 flex-1 min-h-[180px]">
-        {/* Listening visualizer */}
-        <AnimatePresence>
+      <div className="mt-4 flex-1 min-h-[180px] flex items-center justify-center">
+        <AnimatePresence mode="wait">
+          {/* Recording HUD pill - same style as WhisperDemo */}
           {isListening && (
             <motion.div
               key="listening"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex h-full flex-col items-center justify-center gap-3"
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.25 }}
+              className="flex items-center gap-3 rounded-full border border-accent/40 bg-[var(--color-bg-elevated)]/95 px-4 py-2 shadow-[0_0_24px_oklch(0.55_0.22_18/0.4)] backdrop-blur-md"
             >
-              <div className="flex h-12 items-center gap-[3px]">
-                {bars.map((v, i) => (
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
+              </span>
+              <span className="text-xs font-semibold text-accent">
+                Słucham...
+              </span>
+              <div className="flex h-5 items-center gap-[2px]">
+                {bars.slice(0, 18).map((v, i) => (
                   <div
                     key={i}
-                    className="w-[3px] rounded-full bg-accent"
+                    className="w-[2px] rounded-full bg-accent"
                     style={{
-                      height: `${Math.max(3, v * 44)}px`,
+                      height: `${Math.max(2, v * 18)}px`,
                       opacity: 0.7 + v * 0.3,
                     }}
                   />
                 ))}
               </div>
-              <p className="text-xs font-medium text-accent">Słucham...</p>
             </motion.div>
           )}
 
+          {/* Processing HUD pill - same style */}
           {isProcessing && (
             <motion.div
               key="processing"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="flex h-full flex-col items-center justify-center gap-3"
+              transition={{ duration: 0.2 }}
+              className="flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)]/95 px-4 py-2 text-xs font-medium text-[var(--color-fg-muted)] shadow-lg backdrop-blur-md"
             >
-              <span className="flex gap-1.5">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-accent [animation-delay:0ms]" />
-                <span className="h-2 w-2 animate-pulse rounded-full bg-accent [animation-delay:150ms]" />
-                <span className="h-2 w-2 animate-pulse rounded-full bg-accent [animation-delay:300ms]" />
+              <span className="flex gap-1">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent [animation-delay:0ms]" />
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent [animation-delay:150ms]" />
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent [animation-delay:300ms]" />
               </span>
-              <p className="text-xs font-medium text-accent">Przetwarzam...</p>
+              <span>Przetwarzam...</span>
             </motion.div>
           )}
 
+          {/* Result text + brief Wstawione pill */}
           {shown && (
-            <motion.p
+            <motion.div
               key="text"
-              initial={{ opacity: 0, scale: 0.95, filter: "blur(8px)" }}
-              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="font-mono text-sm leading-relaxed sm:text-base"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+              className="flex w-full flex-col items-center gap-3"
             >
-              {text}
-            </motion.p>
+              <motion.p
+                initial={{ opacity: 0, scale: 0.95, filter: "blur(8px)" }}
+                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                className="font-mono text-sm leading-relaxed sm:text-base"
+              >
+                {text}
+              </motion.p>
+            </motion.div>
           )}
         </AnimatePresence>
       </div>
