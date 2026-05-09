@@ -32,16 +32,19 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "PolskiWhisper",
-    description: "Pisz głosem. Po polsku. Za darmo.",
+    title: "PolskiWhisper - dyktowanie po polsku offline",
+    description:
+      "Darmowa aplikacja do dyktowania w macOS i Windows. Mowa jest 3× szybsza niż klawiatura. Działa offline, zero telemetrii.",
+    url: "https://polskiwhisper.pl",
     type: "website",
     locale: "pl_PL",
     siteName: "PolskiWhisper",
   },
   twitter: {
     card: "summary_large_image",
-    title: "PolskiWhisper",
-    description: "Pisz głosem. Po polsku.",
+    title: "PolskiWhisper - dyktowanie po polsku offline",
+    description:
+      "Darmowa aplikacja do dyktowania po polsku. 3× szybciej niż klawiatura. macOS · Windows · offline.",
   },
 };
 
