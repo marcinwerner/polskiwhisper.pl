@@ -28,16 +28,15 @@ public sealed partial class MainWindow : Window
             VersionLabel.Text = $"v{version.Major}.{version.Minor}.{version.Build}";
         }
 
-        Loaded += OnLoaded;
-    }
-
-    private void OnLoaded(object sender, RoutedEventArgs e)
-    {
-        // Domyślnie pokazuje pierwszą zakładkę (Ogólne).
-        if (MainNav.MenuItems.Count > 0 && MainNav.MenuItems[0] is NavigationViewItem firstItem)
+        // NavigationView jako FrameworkElement ma Loaded (Window nie ma).
+        MainNav.Loaded += (_, _) =>
         {
-            MainNav.SelectedItem = firstItem;
-        }
+            // Domyślnie pokazuje pierwszą zakładkę (Ogólne).
+            if (MainNav.MenuItems.Count > 0 && MainNav.MenuItems[0] is NavigationViewItem firstItem)
+            {
+                MainNav.SelectedItem = firstItem;
+            }
+        };
     }
 
     private void MainNav_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
