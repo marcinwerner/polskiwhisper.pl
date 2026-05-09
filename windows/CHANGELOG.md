@@ -4,6 +4,60 @@ Wszystkie znaczące zmiany w wersji Windows. Format na podstawie [Keep a Changel
 
 > **Wersjonowanie**: tagi w git mają prefix `win-` (np. `win-v0.1.0-preview`), żeby rozróżnić od macOS (`v0.1.5`). Numeracja Windows niezależna od macOS.
 
+## [Unreleased] - po 2026-05-09 (kierunek v0.2.0)
+
+**Pełne UI dostępne** - 12 komponentów które były wyłączone w `v0.1.0-preview` zostało reaktywowanych iteracyjnie + zintegrowanych w aplikacji.
+
+### Nowości w UI
+
+- **Główne okno z 4 zakładkami** (NavigationView w trybie Top tabs): Ogólne, Whisper, Słownik, O programie
+- **Pierwsze uruchomienie - kreator konfiguracji**: 5 kroków (Powitanie, Mikrofon, Model Whisper, Skrót klawiszowy, Zakończenie). Po zakończeniu automatyczne otwarcie okna głównego.
+- **Pływające okno dyktowania** z waveform animation - pojawia się przy nagrywaniu, ukrywa po zakończeniu (subskrybcja `DictationEngine.PhaseChanged`)
+- **Ikona w pasku zadań** (system tray) z menu kontekstowym (Stan, Toggle dyktowania, Ustawienia, O programie, Zakończ)
+- **Powiadomienia systemowe** (Windows Toast) o dostępnych aktualizacjach z przyciskami "Otwórz Ustawienia" / "Później"
+- **9 dźwięków systemowych** dostępnych w `SoundService` przez DI (Assets/Sounds/*.wav nadal do dodania)
+
+### Pełen lifecycle aplikacji w `App.OnLaunched`
+
+```
+1. AppCoordinator.CreateAsync()           # DI init
+2. TrayIconController.Initialize()        # tray icon w status bar
+3. SetupFloatingDictationWindow()         # PhaseChanged listener
+4. First-run check                        # OnboardingWindow lub MainWindow
+5. StartHotkeyMonitorAsync()              # global hotkey w tle
+6. CheckForUpdatesIfDueAsync()            # 24h update check
+7. PreloadWhisperModelIfDownloadedAsync() # model preload
+```
+
+### Naprawione (lessons learned WinUI 3)
+
+- Records z init-only properties → klasy z public setters (XAML data binding wymaga setterów dla `XamlTypeInfo.g.cs`)
+- `mc:Ignorable` design-time attribute usuniety z 12 plików XAML (powodował WMC0011 error)
+- `Color` struct importowany z `Windows.UI` (nie `Microsoft.UI`)
+- H.NotifyIcon 2.x API: `Icon` to `nint` (HICON), `PopupMenuItem` wymaga `onClick` parameter
+- `TextBlock.Background` nie istnieje w WinUI 3 - opakowanie w `Border`
+- `Window` nie ma `Loaded` event - użycie `MainNav.Loaded` (FrameworkElement)
+- `Window.Hide()` nie istnieje - `AppWindow.Hide()` przez wrapper `HideWindow()`
+
+### Niesprawdzone runtime
+
+CI runner nie ma mikrofonu, GPU, modelu Whisper. Wymaga test na Windows machine:
+- Whisper.net inference end-to-end
+- NAudio recording z prawdziwego mikrofonu
+- SharpHook global hotkey w prawdziwym kontekście
+- Auto-paste w aktywnej aplikacji
+- DirectML GPU acceleration
+
+### Brand assets - nadal brak
+
+- `AppIcon.ico` 256×256 multi-resolution
+- `TrayIcon.ico` 16×16 + 32×32 multi-resolution
+- 9× `Assets/Sounds/*.wav` 1-sek systemowe dźwięki
+
+Aplikacja używa system defaults dopóki nie zostaną dodane.
+
+---
+
 ## [0.1.0-preview] - 2026-05-09
 
 **Pierwszy publiczny pre-release Windows.** Placeholder UI - testowa wersja sprawdzająca czy aplikacja w ogóle uruchamia się na Windows. Pełne UI z dyktowaniem zaplanowane na `v0.2.0` po feedbacku testerów.

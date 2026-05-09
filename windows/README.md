@@ -59,18 +59,13 @@ Pełen przewodnik: [docs/SZYMON_TEST.md](docs/SZYMON_TEST.md)
 
 Pełna architektura: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
-## 🚧 Co jest tymczasowo wyłączone w v0.1.0-preview
+## 🚧 Status komponentów
 
-XamlCompiler na CI runner nie raportuje konkretnych błędów dla complex XAML pages. Aktywacja po debugu lokalnym w Visual Studio 2022. Wyłączone w `csproj`:
+**Pre-release v0.1.0-preview** (wydany 9.05.2026): placeholder UI, 12 komponentów wyłączonych w csproj.
 
-- 4 zakładki Settings (Ogólne, Whisper, Słownik, O programie)
-- FloatingDictationWindow + waveform
-- OnboardingWindow + 5 kroków first-run wizard
-- TrayIconController (system tray)
-- NotificationDispatcher (Windows Toast)
-- SoundService (9 dźwięków systemowych)
+**Po reaktywacji** (commits 9.05.2026 wieczór, kierunek v0.2.0): wszystkie 12 komponentów aktywne i zintegrowane w aplikacji - kompiluje się GREEN na CI, ZIP artifact zawiera pełne UI. Niesprawdzony runtime, czeka na test na Windows machine + brand assets.
 
-**Cały kod jest w repo** - aktywacja przez usunięcie `<Page Remove>` + `<Compile Remove>` w `windows/src/PolskiWhisperWin/PolskiWhisperWin.csproj`.
+Pełny CHANGELOG: [windows/CHANGELOG.md](CHANGELOG.md).
 
 ## Build i development
 
