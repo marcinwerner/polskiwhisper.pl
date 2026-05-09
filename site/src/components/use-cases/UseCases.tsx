@@ -48,11 +48,10 @@ const CASES = [
   },
 ] as const;
 
-// Realistic timings - voice 20% faster than original (168 WPM = energetic native speaker),
-// keyboard derived from per-case speed
-const SPEECH_WPM = 168; // 20% faster than 140 baseline
-const SPEECH_MS_PER_WORD = 60_000 / SPEECH_WPM; // ~357ms
-const PROCESSING_MS = 560; // 20% faster than 700ms
+// Voice timings - tuned for snappy demo (40% faster than baseline conversational pace)
+const SPEECH_WPM = 224; // ~40% faster than 140 baseline (voice text appears quickly)
+const SPEECH_MS_PER_WORD = 60_000 / SPEECH_WPM; // ~268ms
+const PROCESSING_MS = 420; // 40% faster than 700ms baseline
 const KEYBOARD_SPEED_RATIO = 3; // Stanford 2016: speech is 3x faster
 const KEYBOARD_GLOBAL_SPEEDUP = 0.8; // additional 20% faster on keyboard
 const POST_FINISH_HOLD = 2800; // ms to hold final state before next case
