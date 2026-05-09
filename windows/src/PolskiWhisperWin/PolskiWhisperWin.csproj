@@ -70,19 +70,8 @@
     Aktywne (compiled): WaveformView (od 2026-05-09).
     Wyłączone: pozostałe XAML pages + .cs (poniżej).
   -->
-  <ItemGroup>
-    <Page Remove="Onboarding\OnboardingWindow.xaml" />
-    <Page Remove="Onboarding\Steps\WelcomeStep.xaml" />
-    <Page Remove="Onboarding\Steps\MicrophoneStep.xaml" />
-    <Page Remove="Onboarding\Steps\ModelStep.xaml" />
-    <Page Remove="Onboarding\Steps\HotkeyStep.xaml" />
-    <Page Remove="Onboarding\Steps\FinishStep.xaml" />
+  <!-- Wszystkie XAML pages aktywne od 2026-05-09. -->
 
-    <Compile Remove="Onboarding\**\*.cs" />
-
-    <None Include="Onboarding\**\*.xaml" />
-    <None Include="Onboarding\**\*.cs" />
-  </ItemGroup>
 
   <!-- Wszystkie .cs services aktywne od 2026-05-09: SoundService, NotificationDispatcher, TrayIconController. -->
 
