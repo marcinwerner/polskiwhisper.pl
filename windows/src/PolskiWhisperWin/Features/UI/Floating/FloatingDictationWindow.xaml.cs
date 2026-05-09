@@ -59,7 +59,7 @@ public sealed partial class FloatingDictationWindow : Window
     }
 
     /// <summary>Ukryj okno (Window nie ma natywnego Hide w WinUI 3 - używamy AppWindow).</summary>
-    public new void Hide() => AppWindow.Hide();
+    public void HideWindow() => AppWindow.Hide();
 
     private void PositionAtTopCenter()
     {
@@ -142,7 +142,7 @@ public sealed partial class FloatingDictationWindow : Window
 
             case AppPhase.Idle:
             default:
-                Hide();
+                HideWindow();
                 Waveform.Reset();
                 break;
         }

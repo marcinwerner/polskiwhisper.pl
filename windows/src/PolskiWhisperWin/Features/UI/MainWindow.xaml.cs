@@ -4,13 +4,17 @@
 
 using System.Reflection;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using PolskiWhisperWin.Features.UI.Pages;
 
 namespace PolskiWhisperWin.Features.UI;
 
 /// <summary>
-/// Główne okno (placeholder w v0.1.0).
-/// W kolejnych iteracjach: 4 zakładki Settings (Ogólne, Whisper, Słownik, O programie).
+/// Główne okno Settings z 4 zakładkami: Ogólne, Whisper, Słownik, O programie.
 /// </summary>
+/// <remarks>
+/// Mapping z macOS <c>SettingsView</c> (4 taby) - tutaj NavigationView z PaneDisplayMode="Top".
+/// </remarks>
 public sealed partial class MainWindow : Window
 {
     public MainWindow()
@@ -22,6 +26,39 @@ public sealed partial class MainWindow : Window
         if (version is not null)
         {
             VersionLabel.Text = $"v{version.Major}.{version.Minor}.{version.Build}";
+        }
+
+        Loaded += OnLoaded;
+    }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        // Domyślnie pokazuje pierwszą zakładkę (Ogólne).
+        if (MainNav.MenuItems.Count > 0 && MainNav.MenuItems[0] is NavigationViewItem firstItem)
+        {
+            MainNav.SelectedItem = firstItem;
+        }
+    }
+
+    private void MainNav_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+    {
+        if (args.SelectedItem is not NavigationViewItem item) return;
+        var tag = item.Tag?.ToString();
+
+        switch (tag)
+        {
+            case "general":
+                ContentFrame.Navigate(typeof(GeneralSettingsPage));
+                break;
+            case "whisper":
+                ContentFrame.Navigate(typeof(WhisperSettingsPage));
+                break;
+            case "vocabulary":
+                ContentFrame.Navigate(typeof(VocabularySettingsPage));
+                break;
+            case "about":
+                ContentFrame.Navigate(typeof(AboutPage));
+                break;
         }
     }
 
