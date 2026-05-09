@@ -107,3 +107,10 @@ CLAUDE.local.md
 
 # Internal docs - nie publiczne
 .internal/
+
+# Node.js / Next.js (site/)
+node_modules/
+.next/
+out/
+next-env.d.ts
+.vercel/

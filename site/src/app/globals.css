@@ -1,0 +1,162 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-inter);
+
+  /* Polish red accent - derived from app icon */
+  --color-accent: oklch(0.55 0.22 18);
+  --color-accent-hover: oklch(0.48 0.24 18);
+  --color-accent-light: oklch(0.62 0.18 18);
+  --color-accent-subtle: oklch(0.55 0.22 18 / 0.12);
+  --color-accent-fg: oklch(0.99 0 0);
+
+  /* Semantic */
+  --color-success: oklch(0.65 0.15 145);
+  --color-warning: oklch(0.75 0.15 80);
+
+  /* Spacing */
+  --spacing-section: 6rem;
+  --spacing-section-mobile: 3rem;
+
+  /* Radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px oklch(0 0 0 / 0.07);
+  --shadow-lg: 0 10px 15px oklch(0 0 0 / 0.10);
+  --shadow-glow: 0 0 32px oklch(0.55 0.22 18 / 0.25);
+
+  /* Animations */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Dark mode (default) ── */
+:root {
+  --color-bg: oklch(0.09 0.005 250);
+  --color-bg-elevated: oklch(0.13 0.005 250);
+  --color-bg-subtle: oklch(0.11 0.005 250);
+  --color-fg: oklch(0.95 0.005 250);
+  --color-fg-muted: oklch(0.60 0.01 250);
+  --color-fg-subtle: oklch(0.45 0.01 250);
+  --color-border: oklch(0.22 0.005 250);
+  --color-border-subtle: oklch(0.17 0.005 250);
+  color-scheme: dark;
+}
+
+/* ── Light mode ── */
+.light {
+  --color-bg: oklch(0.99 0.002 250);
+  --color-bg-elevated: oklch(0.96 0.005 250);
+  --color-bg-subtle: oklch(0.97 0.003 250);
+  --color-fg: oklch(0.13 0.005 250);
+  --color-fg-muted: oklch(0.40 0.01 250);
+  --color-fg-subtle: oklch(0.60 0.01 250);
+  --color-border: oklch(0.88 0.005 250);
+  --color-border-subtle: oklch(0.92 0.005 250);
+  color-scheme: light;
+}
+
+/* ── Base styles ── */
+body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-accent-fg);
+}
+
+/* ── Focus styles (a11y) ── */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ── Smooth scroll (respect motion prefs) ── */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* ── Anchor offset for fixed navbar (64px height) ── */
+section[id] {
+  scroll-margin-top: 80px;
+}
+
+/* ── Skip to content link ── */
+.skip-to-content {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  padding: 0.75rem 1.5rem;
+  background: var(--color-accent);
+  color: var(--color-accent-fg);
+  font-weight: 600;
+  border-radius: 0 0 var(--radius-md) 0;
+  transition: left 0.15s;
+}
+
+.skip-to-content:focus {
+  left: 0;
+}
+
+/* ── Scrollbar (dark mode) ── */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-fg-subtle);
+}
+
+/* ── Print styles ── */
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+
+  a::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #666;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Text balance for headings ── */
+h1, h2, h3 {
+  text-wrap: balance;
+}
