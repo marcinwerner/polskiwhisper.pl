@@ -124,7 +124,7 @@ export function Hero() {
             <MonitorDot className="h-5 w-5" />
             Pobierz dla Windows
             <span className="ml-1 rounded-md bg-accent-subtle px-1.5 py-0.5 text-xs font-medium text-accent">
-              preview
+              beta
             </span>
           </motion.a>
         </motion.div>

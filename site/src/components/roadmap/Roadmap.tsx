@@ -10,8 +10,8 @@ const MILESTONES = [
     status: "done" as const,
   },
   {
-    version: "v0.1.0-preview",
-    label: "Windows pre-release",
+    version: "v0.1.0 beta",
+    label: "Windows beta - gotowa do testów",
     status: "done" as const,
   },
   {

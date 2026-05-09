@@ -32,8 +32,8 @@ const PLATFORMS = {
   windows: {
     icon: MonitorDot,
     label: "Windows",
-    version: "v0.1.0-preview",
-    status: "Pre-release",
+    version: "v0.1.0 beta",
+    status: "Beta - gotowa do testów",
     statusColor: "text-accent",
     downloadUrl:
       "https://github.com/marcinwerner/polskiwhisper.pl/releases/download/win-v0.1.0-preview/PolskiWhisper-0.1.0-preview-win-x64.zip",
