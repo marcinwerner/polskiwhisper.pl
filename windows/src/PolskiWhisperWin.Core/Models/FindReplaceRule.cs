@@ -38,15 +38,16 @@ public sealed class FindReplaceRule
 
     public FindReplaceRule() { }
 
-    public FindReplaceRule(long id, string findText, string replaceWith, bool isRegex, bool caseSensitive, int orderIndex, DateTime createdAt)
+    // Parametry PascalCase aby zachowac kompatybilnosc z named-argument callsites z czasów records.
+    public FindReplaceRule(long Id, string FindText, string ReplaceWith, bool IsRegex, bool CaseSensitive, int OrderIndex, DateTime CreatedAt)
     {
-        Id = id;
-        FindText = findText;
-        ReplaceWith = replaceWith;
-        IsRegex = isRegex;
-        CaseSensitive = caseSensitive;
-        OrderIndex = orderIndex;
-        CreatedAt = createdAt;
+        this.Id = Id;
+        this.FindText = FindText;
+        this.ReplaceWith = ReplaceWith;
+        this.IsRegex = IsRegex;
+        this.CaseSensitive = CaseSensitive;
+        this.OrderIndex = OrderIndex;
+        this.CreatedAt = CreatedAt;
     }
 
     /// <summary>Pusta reguła do tworzenia nowej w UI (ID == 0 oznacza "nowa, jeszcze nie zapisana").</summary>

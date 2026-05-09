@@ -145,7 +145,15 @@ public sealed class SqliteVocabularyStore : IVocabularyStore, IAsyncDisposable
 
             var newId = (long)(await insertCmd.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false) ?? 0L);
 
-            return rule with { Id = newId, OrderIndex = (int)newOrder };
+            // FindReplaceRule jest klasa (nie record od konwersji XAML), wiec brak `with` expression.
+            return new FindReplaceRule(
+                Id: newId,
+                FindText: rule.FindText,
+                ReplaceWith: rule.ReplaceWith,
+                IsRegex: rule.IsRegex,
+                CaseSensitive: rule.CaseSensitive,
+                OrderIndex: (int)newOrder,
+                CreatedAt: rule.CreatedAt);
         }
         finally
         {
