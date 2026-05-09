@@ -1,6 +1,10 @@
-# Prompt do nowej sesji Claude Code
+# Prompt do nowej sesji Claude Code Desktop
 
-**Skopiuj poniższy blok i wklej w nowej sesji Claude Code uruchomionej w pustym folderze (proponowane: `~/Documents/GitHub/polskiwhisper-landing/`).**
+**Marcin pracuje wyłącznie w Claude Code Desktop.** Workflow uruchomienia nowej sesji:
+
+- **a)** Utwórz folder docelowy (jeśli nie istnieje) - z bieżącej sesji Claude Code Desktop wykonaj: `mkdir -p ~/Documents/GitHub/polskiwhisper-landing` (przez tool Bash)
+- **b)** W Claude Code Desktop otwórz **nowe okno / nowy projekt** i ustaw working directory na ten folder (przez UI Claude Code Desktop)
+- **c)** Wklej poniższy prompt jako pierwszą wiadomość w tej nowej sesji
 
 ---
 
@@ -40,6 +44,7 @@ KROK 6 - Commits
 Commituj często. Pierwsza wersja - kompletny scaffold + hero + footer + deploy preview na Vercel. Następne iteracje per sekcja.
 
 WAŻNE konwencje (zgodne z preferencjami Marcina):
+- Marcin pracuje WYŁĄCZNIE w Claude Code Desktop - NIE pisz "otwórz terminal i wpisz claude". Komendy bash uruchamiasz Ty (przez tool Bash w sesji), nie Marcin w external terminal
 - Polski język w copy z polskimi znakami diakrytycznymi (ą, ę, ś, ć, ź, ż, ó, ł, ń)
 - "-" (krótka pauza) zamiast "—" (em dash)
 - Friendly, NIE alarmistyczny ton (per 03-BRAND.md)
@@ -52,16 +57,15 @@ Powodzenia! Zaczynamy od KROK 1.
 
 ---
 
-## Po wklejeniu
+## Checklist przed wklejeniem
 
-Marcin: **NIE WYSYŁAJ** od razu. Najpierw upewnij się, że:
+- **a)** Folder `~/Documents/GitHub/polskiwhisper-landing/` istnieje (jeśli nie - utwórz w bieżącej sesji przez `mkdir -p`)
+- **b)** Otwarte nowe okno Claude Code Desktop z working directory na ten folder
+- **c)** Repo apki PolskiWhisper jest dostępne pod ścieżką `/Users/Marcin/Documents/GitHub/polskiwhisper.pl/` (tak jest aktualnie - nic nie trzeba robić)
+- **d)** Marcin ma przygotowane odpowiedzi na 6 pytań uściślających z `01-BRIEF.md` (lub odpowie "decyduj sam" jeśli nie ma zdania)
 
-- **a)** Nowa sesja Claude Code jest uruchomiona w **pustym folderze** (np. utworzonym `mkdir -p ~/Documents/GitHub/polskiwhisper-landing && cd ~/Documents/GitHub/polskiwhisper-landing && claude`)
-- **b)** Repo apki PolskiWhisper jest dostępne pod ścieżką `/Users/Marcin/Documents/GitHub/polskiwhisper.pl/` (tak jest aktualnie)
-- **c)** Masz przygotowane odpowiedzi na 6 pytań uściślających z `01-BRIEF.md` (lub wiesz że odpowiesz "decyzja należy do Ciebie, agencie" w razie wątpliwości)
-
-Po wklejeniu agent przeczyta pliki, zada pytania, a Ty odpowiadasz i lecimy.
+Po wklejeniu agent przeczyta pliki, zada 6 pytań, Marcin odpowiada, lecimy.
 
 ## Alternative: krótszy prompt jeśli chcesz "v0.1 landing w 1 dzień"
 
-Jeśli pełen scope (z WebGPU demo, calculator productivity itp.) jest overkill na start, daj znać - przygotuję mini brief na statyczny landing z 3 sekcjami (hero + features + download), gotowy w 1 dzień, bez bells and whistles.
+Jeśli pełen scope (z WebGPU demo, calculator productivity itp.) jest overkill na start - daj znać, dopiszę `PROMPT-MINI.md` z statycznym landingiem 3 sekcje (hero + features + download), gotowy w 1 dzień, bez bells and whistles.
