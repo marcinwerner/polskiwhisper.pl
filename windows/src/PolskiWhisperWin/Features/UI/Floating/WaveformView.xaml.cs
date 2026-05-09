@@ -7,6 +7,7 @@ using Microsoft.UI;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
+using Windows.UI;
 
 namespace PolskiWhisperWin.Features.UI.Floating;
 
