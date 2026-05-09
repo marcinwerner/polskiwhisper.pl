@@ -1,438 +1,386 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
-import { Mic, Square, Loader2, Download, Volume2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { Mail, Mic, Command, Lock } from "lucide-react";
 import { cn } from "@/lib/cn";
 
-type DemoState =
+type Phase =
   | "idle"
-  | "loading-model"
-  | "ready"
+  | "hotkey"
   | "recording"
-  | "transcribing"
-  | "done"
-  | "error";
+  | "processing"
+  | "inserted"
+  | "rest";
 
-const MODEL_ID = "onnx-community/whisper-tiny";
+const SAMPLE_TEXT =
+  "Cześć Marto, dzięki za przesłanie raportu. Przejrzałem wszystkie sekcje i mam kilka uwag, które omówię na jutrzejszym callu o dziesiątej.";
+
+const TIMINGS = {
+  hotkey: 700,
+  recording: 3500,
+  processing: 350,
+  hold: 4500,
+  rest: 1200,
+} as const;
 
 export function WhisperDemo() {
-  const [state, setState] = useState<DemoState>("idle");
-  const [transcript, setTranscript] = useState("");
-  const [progress, setProgress] = useState(0);
-  const [progressLabel, setProgressLabel] = useState("");
-  const [error, setError] = useState("");
-  const [duration, setDuration] = useState(0);
-  const [visualizerData, setVisualizerData] = useState<number[]>(
-    new Array(32).fill(0)
-  );
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const pipelineRef = useRef<any>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const analyserRef = useRef<AnalyserNode | null>(null);
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [insertedText, setInsertedText] = useState("");
+  const [bars, setBars] = useState<number[]>(() => new Array(40).fill(0));
   const animFrameRef = useRef<number>(0);
-  const timerRef = useRef<ReturnType<typeof setInterval>>(null!);
+  const phaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+  const startedRef = useRef(false);
 
+  // Start animation when section comes into view (intersection observer)
   useEffect(() => {
-    return () => {
-      cancelAnimationFrame(animFrameRef.current);
-      clearInterval(timerRef.current);
-    };
-  }, []);
+    const section = sectionRef.current;
+    if (!section) return;
 
-  const loadModel = useCallback(async () => {
-    setState("loading-model");
-    setProgress(0);
-    setProgressLabel("Inicjalizacja...");
-    setError("");
-
-    try {
-      const transformers = await import("@huggingface/transformers");
-      const { pipeline, env } = transformers;
-      env.allowLocalModels = false;
-      env.allowRemoteModels = true;
-
-      // Try WebGPU if available (M1/M2 Mac, modern Windows GPU), fallback to WASM
-      const hasWebGPU =
-        typeof navigator !== "undefined" &&
-        "gpu" in navigator &&
-        navigator.gpu != null;
-
-      const device = hasWebGPU ? "webgpu" : "wasm";
-      const dtype = hasWebGPU ? "fp32" : "q8";
-
-      console.info(`[WhisperDemo] Loading model: device=${device} dtype=${dtype}`);
-      setProgressLabel(
-        hasWebGPU
-          ? "Pobieranie modelu (WebGPU, ~70 MB)..."
-          : "Pobieranie modelu (WASM, ~40 MB)..."
-      );
-
-      const pipe = await pipeline(
-        "automatic-speech-recognition",
-        MODEL_ID,
-        {
-          dtype,
-          device,
-          progress_callback: (p: {
-            status: string;
-            progress?: number;
-            file?: string;
-            loaded?: number;
-            total?: number;
-          }) => {
-            console.info(`[WhisperDemo] ${p.status}`, p.file ?? "", p.progress ?? "");
-            if (p.status === "progress" && p.progress != null) {
-              setProgress(Math.round(p.progress));
-              setProgressLabel(
-                `Pobieranie: ${p.file?.split("/").pop() ?? "model"}`
-              );
-            }
-            if (p.status === "ready" || p.status === "done") {
-              setProgressLabel("Model gotowy");
-            }
-          },
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting && !startedRef.current) {
+            startedRef.current = true;
+            setPhase("hotkey");
+          }
         }
+      },
+      { threshold: 0.4 }
+    );
+
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
+
+  // Phase state machine
+  useEffect(() => {
+    if (phaseTimerRef.current) clearTimeout(phaseTimerRef.current);
+
+    const reducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reducedMotion) {
+      // Static end state for reduced motion
+      setPhase("inserted");
+      setInsertedText(SAMPLE_TEXT);
+      return;
+    }
+
+    if (phase === "idle") return;
+
+    if (phase === "hotkey") {
+      phaseTimerRef.current = setTimeout(() => setPhase("recording"), TIMINGS.hotkey);
+    } else if (phase === "recording") {
+      phaseTimerRef.current = setTimeout(
+        () => setPhase("processing"),
+        TIMINGS.recording
       );
+    } else if (phase === "processing") {
+      phaseTimerRef.current = setTimeout(() => {
+        setInsertedText(SAMPLE_TEXT);
+        setPhase("inserted");
+      }, TIMINGS.processing);
+    } else if (phase === "inserted") {
+      phaseTimerRef.current = setTimeout(() => setPhase("rest"), TIMINGS.hold);
+    } else if (phase === "rest") {
+      phaseTimerRef.current = setTimeout(() => {
+        setInsertedText("");
+        setPhase("hotkey");
+      }, TIMINGS.rest);
+    }
 
-      pipelineRef.current = pipe;
-      setState("ready");
-    } catch (err) {
-      console.error("[WhisperDemo] Model load error:", err);
-      const msg = err instanceof Error ? err.message : String(err);
+    return () => {
+      if (phaseTimerRef.current) clearTimeout(phaseTimerRef.current);
+    };
+  }, [phase]);
 
-      // More descriptive error based on common failure modes
-      let userMsg = "Nie udało się załadować modelu.";
-      if (msg.includes("fetch") || msg.includes("network")) {
-        userMsg += " Sprawdź połączenie z internetem.";
-      } else if (msg.includes("WebGPU") || msg.includes("gpu")) {
-        userMsg += " Twoja przeglądarka nie wspiera WebGPU - spróbuj odświeżyć stronę.";
-      } else if (msg.includes("memory") || msg.includes("Memory")) {
-        userMsg += " Brak pamięci - zamknij niepotrzebne karty i spróbuj ponownie.";
-      } else {
-        userMsg += ` (${msg.slice(0, 80)})`;
+  // Animate bars during recording phase (simulated audio levels)
+  useEffect(() => {
+    if (phase !== "recording") {
+      setBars(new Array(40).fill(0));
+      return;
+    }
+
+    const reducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reducedMotion) return;
+
+    let last = performance.now();
+    const heights = new Float32Array(40);
+    const phases = Array.from({ length: 40 }, () => Math.random() * Math.PI * 2);
+    let nextBurst = 0;
+
+    const tick = (now: number) => {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      const t = now / 1000;
+
+      // Speech-like bursts
+      if (now > nextBurst) {
+        const center = Math.floor(Math.random() * 40);
+        for (let b = -6; b <= 6; b++) {
+          const idx = center + b;
+          if (idx >= 0 && idx < 40) {
+            const falloff = 1 - Math.abs(b) / 6;
+            heights[idx] = Math.max(heights[idx], 0.6 + Math.random() * 0.4 * falloff);
+          }
+        }
+        nextBurst = now + 100 + Math.random() * 200;
       }
 
-      setError(userMsg);
-      setState("error");
-    }
-  }, []);
-
-  const startRecording = useCallback(async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          channelCount: 1,
-          sampleRate: 16000,
-        },
-      });
-
-      const audioCtx = new AudioContext();
-      const source = audioCtx.createMediaStreamSource(stream);
-      const analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 64;
-      source.connect(analyser);
-      analyserRef.current = analyser;
-
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-      function updateVisualizer() {
-        analyser.getByteFrequencyData(dataArray);
-        const normalized = Array.from(dataArray).map((v) => v / 255);
-        setVisualizerData(normalized);
-        animFrameRef.current = requestAnimationFrame(updateVisualizer);
+      const next = new Array(40);
+      for (let i = 0; i < 40; i++) {
+        const wave =
+          (Math.sin(t * 6 + phases[i]) * 0.3 + Math.sin(t * 11 + phases[i]) * 0.2) +
+          0.15;
+        const target = Math.max(0.05, Math.min(1, wave + heights[i]));
+        const isAttacking = target > heights[i];
+        const rate = isAttacking ? 16 : 5;
+        heights[i] = heights[i] + (target - heights[i]) * Math.min(1, dt * rate);
+        next[i] = heights[i];
       }
-      updateVisualizer();
+      setBars(next);
+      animFrameRef.current = requestAnimationFrame(tick);
+    };
 
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-          ? "audio/webm;codecs=opus"
-          : "audio/webm",
-      });
-
-      audioChunksRef.current = [];
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunksRef.current.push(e.data);
-      };
-
-      mediaRecorder.onstop = async () => {
-        cancelAnimationFrame(animFrameRef.current);
-        clearInterval(timerRef.current);
-        stream.getTracks().forEach((t) => t.stop());
-        audioCtx.close();
-        setVisualizerData(new Array(32).fill(0));
-
-        const audioBlob = new Blob(audioChunksRef.current, {
-          type: "audio/webm",
-        });
-        await transcribe(audioBlob);
-      };
-
-      mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start(250);
-      setState("recording");
-      setDuration(0);
-      setTranscript("");
-
-      timerRef.current = setInterval(() => {
-        setDuration((d) => d + 0.1);
-      }, 100);
-    } catch (err) {
-      console.error("Mic error:", err);
-      setError(
-        "Brak dostępu do mikrofonu. Zezwól na użycie mikrofonu w przeglądarce."
-      );
-      setState("error");
-    }
-  }, []);
-
-  const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current?.state === "recording") {
-      mediaRecorderRef.current.stop();
-    }
-  }, []);
-
-  async function transcribe(audioBlob: Blob) {
-    setState("transcribing");
-    setProgressLabel("Transkrybuję...");
-
-    try {
-      const arrayBuffer = await audioBlob.arrayBuffer();
-
-      const audioCtx = new AudioContext({ sampleRate: 16000 });
-      const decoded = await audioCtx.decodeAudioData(arrayBuffer);
-      const float32 = decoded.getChannelData(0);
-      audioCtx.close();
-
-      const result = await pipelineRef.current(float32, {
-        language: "polish",
-        task: "transcribe",
-      });
-
-      const text =
-        typeof result === "object" && "text" in result
-          ? (result as { text: string }).text
-          : String(result);
-
-      setTranscript(text.trim());
-      setState("done");
-    } catch (err) {
-      console.error("Transcription error:", err);
-      setError("Błąd transkrypcji. Spróbuj ponownie.");
-      setState("error");
-    }
-  }
-
-  const reset = useCallback(() => {
-    setTranscript("");
-    setError("");
-    setState(pipelineRef.current ? "ready" : "idle");
-  }, []);
+    animFrameRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animFrameRef.current);
+  }, [phase]);
 
   return (
-    <section id="demo" className="py-[var(--spacing-section)]">
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center">
+    <section
+      ref={sectionRef}
+      id="demo"
+      className="py-[var(--spacing-section)]"
+    >
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="text-center"
+        >
           <h2 className="text-3xl font-bold sm:text-4xl">
-            Wypróbuj w przeglądarce
+            Tak to wygląda na żywo
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-[var(--color-fg-muted)]">
-            Ten sam silnik Whisper, działający bezpośrednio w Twojej
-            przeglądarce. Żadne audio nie opuszcza komputera.
+            Hotkey, mówisz, tekst pojawia się w aktywnym oknie. Wszystko
+            lokalnie, audio nie opuszcza komputera.
           </p>
-        </div>
+        </motion.div>
 
-        <div className="mt-12 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated)] p-6 sm:p-8">
-          {/* Idle state - invite to load model */}
-          {state === "idle" && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col items-center gap-6 py-8"
-            >
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent-subtle">
-                <Volume2 className="h-8 w-8 text-accent" />
+        {/* Mock app window */}
+        <motion.div
+          initial={{ opacity: 0, y: 40, scale: 0.97 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          className="relative mt-12"
+        >
+          <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-2xl">
+            {/* Title bar */}
+            <div className="flex items-center gap-3 border-b border-[var(--color-border-subtle)] bg-[var(--color-bg-subtle)] px-4 py-3">
+              <div className="flex gap-1.5">
+                <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
+                <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
+                <span className="h-3 w-3 rounded-full bg-[#28c840]" />
               </div>
-              <div className="text-center">
-                <p className="text-lg font-semibold">
-                  Przetestuj rozpoznawanie mowy
-                </p>
-                <p className="mt-2 text-sm text-[var(--color-fg-muted)]">
-                  Model Whisper Tiny (~40 MB) zostanie pobrany i uruchomiony
-                  lokalnie w przeglądarce.
-                </p>
+              <div className="flex flex-1 items-center justify-center gap-2 text-sm text-[var(--color-fg-muted)]">
+                <Mail className="h-4 w-4" />
+                <span className="font-medium">Nowa wiadomość</span>
               </div>
-              <button
-                onClick={loadModel}
-                className="inline-flex h-12 items-center gap-2.5 rounded-xl bg-accent px-6 text-base font-semibold text-[var(--color-accent-fg)] shadow-[var(--shadow-glow)] transition-all hover:bg-accent-hover active:scale-[0.98]"
-              >
-                <Download className="h-5 w-5" />
-                Załaduj model i spróbuj
-              </button>
-            </motion.div>
-          )}
+              <div className="w-12" />
+            </div>
 
-          {/* Loading model */}
-          {state === "loading-model" && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex flex-col items-center gap-6 py-8"
-            >
-              <Loader2 className="h-10 w-10 animate-spin text-accent" />
-              <div className="w-full max-w-sm">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-[var(--color-fg-muted)]">
-                    {progressLabel}
-                  </span>
-                  <span className="font-mono text-accent">{progress}%</span>
-                </div>
-                <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--color-bg)]">
-                  <motion.div
-                    className="h-full rounded-full bg-accent"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${progress}%` }}
-                    transition={{ duration: 0.3 }}
-                  />
-                </div>
+            {/* Email-like content */}
+            <div className="space-y-3 p-6 sm:p-8 min-h-[280px]">
+              <div className="flex items-center gap-3 border-b border-[var(--color-border-subtle)] pb-3">
+                <span className="text-sm text-[var(--color-fg-subtle)]">Do:</span>
+                <span className="text-sm">marta@example.com</span>
               </div>
-              <p className="text-xs text-[var(--color-fg-subtle)]">
-                Pierwszy raz trwa dłużej. Kolejne uruchomienia korzystają z
-                cache przeglądarki.
-              </p>
-            </motion.div>
-          )}
+              <div className="flex items-center gap-3 border-b border-[var(--color-border-subtle)] pb-3">
+                <span className="text-sm text-[var(--color-fg-subtle)]">
+                  Temat:
+                </span>
+                <span className="text-sm">Re: Raport za październik</span>
+              </div>
 
-          {/* Ready / Recording / Transcribing */}
-          {(state === "ready" ||
-            state === "recording" ||
-            state === "transcribing") && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex flex-col items-center gap-6 py-4"
-            >
-              {/* Visualizer */}
-              <div className="flex h-20 items-end gap-[3px]">
-                {visualizerData.map((v, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      "w-2 rounded-t-sm transition-all duration-75",
-                      state === "recording"
-                        ? "bg-accent"
-                        : "bg-[var(--color-border)]"
+              {/* Cursor + inserted text area */}
+              <div className="pt-3">
+                <p className="text-base leading-relaxed text-[var(--color-fg)] min-h-[80px]">
+                  <AnimatePresence mode="wait">
+                    {insertedText ? (
+                      <motion.span
+                        key="text"
+                        initial={{
+                          opacity: 0,
+                          filter: "blur(8px)",
+                          scale: 0.98,
+                        }}
+                        animate={{
+                          opacity: 1,
+                          filter: "blur(0px)",
+                          scale: 1,
+                        }}
+                        transition={{
+                          duration: 0.4,
+                          ease: [0.16, 1, 0.3, 1],
+                        }}
+                      >
+                        {insertedText}
+                      </motion.span>
+                    ) : (
+                      <motion.span
+                        key="cursor"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="inline-flex items-center"
+                      >
+                        <span className="inline-block h-5 w-[2px] animate-blink bg-[var(--color-fg)]" />
+                      </motion.span>
                     )}
-                    style={{
-                      height: `${Math.max(4, v * 80)}px`,
-                    }}
-                  />
-                ))}
-              </div>
-
-              {/* Timer */}
-              {state === "recording" && (
-                <p className="font-mono text-2xl tabular-nums text-accent">
-                  {duration.toFixed(1)}s
+                  </AnimatePresence>
                 </p>
-              )}
-
-              {state === "transcribing" && (
-                <div className="flex items-center gap-2 text-[var(--color-fg-muted)]">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="text-sm">Transkrybuję...</span>
-                </div>
-              )}
-
-              {/* Controls */}
-              <div className="flex items-center gap-4">
-                {state === "ready" && (
-                  <button
-                    onClick={startRecording}
-                    className="inline-flex h-14 items-center gap-2.5 rounded-xl bg-accent px-8 text-base font-semibold text-[var(--color-accent-fg)] shadow-[var(--shadow-glow)] transition-all hover:bg-accent-hover active:scale-[0.98]"
-                  >
-                    <Mic className="h-5 w-5" />
-                    Nagrywaj
-                  </button>
-                )}
-                {state === "recording" && (
-                  <button
-                    onClick={stopRecording}
-                    className="inline-flex h-14 items-center gap-2.5 rounded-xl border-2 border-accent bg-accent/10 px-8 text-base font-semibold text-accent transition-all hover:bg-accent/20 active:scale-[0.98]"
-                  >
-                    <Square className="h-5 w-5" />
-                    Zatrzymaj
-                  </button>
-                )}
               </div>
-
-              {state === "ready" && (
-                <p className="text-xs text-[var(--color-fg-subtle)]">
-                  Powiedz coś po polsku, np. &quot;Dzień dobry, to jest
-                  test.&quot;
-                </p>
-              )}
-            </motion.div>
-          )}
-
-          {/* Result */}
-          <AnimatePresence>
-            {state === "done" && transcript && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-col items-center gap-6 py-4"
-              >
-                <div className="w-full rounded-xl border border-accent/20 bg-accent-subtle p-6">
-                  <p className="text-xs font-medium uppercase tracking-wider text-accent">
-                    Transkrypcja
-                  </p>
-                  <p className="mt-3 text-lg leading-relaxed">{transcript}</p>
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => {
-                      setTranscript("");
-                      setState("ready");
-                    }}
-                    className="inline-flex h-11 items-center gap-2 rounded-lg bg-accent px-5 text-sm font-semibold text-[var(--color-accent-fg)] transition-all hover:bg-accent-hover active:scale-[0.98]"
-                  >
-                    <Mic className="h-4 w-4" />
-                    Spróbuj ponownie
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Error */}
-          <AnimatePresence>
-            {state === "error" && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-col items-center gap-4 py-8"
-              >
-                <p className="text-sm text-[var(--color-warning)]">{error}</p>
-                <button
-                  onClick={reset}
-                  className="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm font-medium transition-colors hover:bg-[var(--color-bg-subtle)]"
-                >
-                  Spróbuj ponownie
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Footer note */}
-          <div className="mt-4 border-t border-[var(--color-border-subtle)] pt-4 text-center text-xs text-[var(--color-fg-subtle)]">
-            Model działa w 100% w przeglądarce (WASM). Audio nie jest
-            wysyłane na żaden serwer.
+            </div>
           </div>
-        </div>
+
+          {/* HUD overlay - PolskiWhisper status pill */}
+          <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 sm:bottom-6">
+            <AnimatePresence mode="wait">
+              {(phase === "idle" || phase === "rest") && (
+                <motion.div
+                  key="idle"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ duration: 0.25 }}
+                  className="flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)]/95 px-4 py-2 text-xs font-medium text-[var(--color-fg-muted)] shadow-lg backdrop-blur-md"
+                >
+                  <Mic className="h-3.5 w-3.5" />
+                  <span>Naciśnij</span>
+                  <kbd className="flex items-center gap-0.5 rounded bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px]">
+                    <Command className="h-2.5 w-2.5" />
+                    <span>⌥</span>
+                    <span>S</span>
+                  </kbd>
+                  <span>aby dyktować</span>
+                </motion.div>
+              )}
+
+              {phase === "hotkey" && (
+                <motion.div
+                  key="hotkey"
+                  initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex items-center gap-2 rounded-full border border-accent/40 bg-accent-subtle px-4 py-2 text-xs font-semibold text-accent shadow-lg backdrop-blur-md"
+                >
+                  <kbd className="flex items-center gap-0.5 rounded bg-accent/20 px-1.5 py-0.5 font-mono text-[10px]">
+                    <Command className="h-2.5 w-2.5" />
+                    <span>⌥</span>
+                    <span>S</span>
+                  </kbd>
+                  <span>Aktywowane</span>
+                </motion.div>
+              )}
+
+              {phase === "recording" && (
+                <motion.div
+                  key="recording"
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.25 }}
+                  className="flex items-center gap-3 rounded-full border border-accent/40 bg-[var(--color-bg-elevated)]/95 px-4 py-2 shadow-[0_0_24px_oklch(0.55_0.22_18/0.4)] backdrop-blur-md"
+                >
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
+                  </span>
+                  <span className="text-xs font-semibold text-accent">
+                    Słucham...
+                  </span>
+                  {/* Mini live waveform */}
+                  <div className="flex h-5 items-center gap-[2px]">
+                    {bars.slice(0, 18).map((v, i) => (
+                      <div
+                        key={i}
+                        className="w-[2px] rounded-full bg-accent"
+                        style={{
+                          height: `${Math.max(2, v * 18)}px`,
+                          opacity: 0.7 + v * 0.3,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
+              {phase === "processing" && (
+                <motion.div
+                  key="processing"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)]/95 px-4 py-2 text-xs font-medium text-[var(--color-fg-muted)] shadow-lg backdrop-blur-md"
+                >
+                  <span className="flex gap-1">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent [animation-delay:0ms]" />
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent [animation-delay:150ms]" />
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent [animation-delay:300ms]" />
+                  </span>
+                  <span>Przetwarzam...</span>
+                </motion.div>
+              )}
+
+              {phase === "inserted" && (
+                <motion.div
+                  key="inserted"
+                  initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  className="flex items-center gap-2 rounded-full border border-[var(--color-success)]/30 bg-[var(--color-success)]/10 px-4 py-2 text-xs font-semibold text-[var(--color-success)] shadow-lg backdrop-blur-md"
+                >
+                  <span>✓</span>
+                  <span>Wstawione</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </motion.div>
+
+        {/* Privacy callout */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="mt-8 flex flex-col items-center gap-3 text-center sm:flex-row sm:justify-center sm:gap-6"
+        >
+          <div className="flex items-center gap-2 text-sm text-[var(--color-fg-muted)]">
+            <Lock className="h-4 w-4 text-accent" />
+            <span>Audio nie opuszcza komputera</span>
+          </div>
+          <span className="hidden text-[var(--color-border)] sm:inline">•</span>
+          <div className="flex items-center gap-2 text-sm text-[var(--color-fg-muted)]">
+            <span className="text-accent font-mono text-base">~1.5 GB</span>
+            <span>model Whisper Large dla najlepszej jakości</span>
+          </div>
+          <span className="hidden text-[var(--color-border)] sm:inline">•</span>
+          <div className="flex items-center gap-2 text-sm text-[var(--color-fg-muted)]">
+            <span className="font-mono text-base text-accent">~0.2s</span>
+            <span>od końca mowy do tekstu</span>
+          </div>
+        </motion.div>
       </div>
     </section>
   );
