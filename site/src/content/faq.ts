@@ -15,6 +15,11 @@ export const FAQ_ITEMS = [
       "Z domyślnym modelem Whisper Turbo (1.5 GB) dokładność dla polskiego wynosi około 95% słów poprawnych. Aplikacja ma wbudowany filtr halucynacji - usuwa typowe artefakty Whisper.",
   },
   {
+    question: "Czy są naukowe potwierdzenia że dyktowanie jest szybsze?",
+    answer:
+      'Tak. Badanie Stanford / Baidu / University of Washington z 2016 roku (Ruan, Wobbrock, Liou, Ng, Landay) wykazało że mowa jest 3.0× szybsza niż klawiatura dla angielskiego i 2.8× dla mandaryńskiego, przy 20.4% niższym wskaźniku błędów. Badanie objęło 32 osoby, każda przepisywała 100 typowych fraz. Pełny paper: arxiv.org/abs/1608.07323.',
+  },
+  {
     question: "Jakie języki obsługuje?",
     answer:
       "Whisper rozumie około 100 języków, ale aplikacja jest zoptymalizowana pod polski. Chcesz angielski? Zmień model w ustawieniach.",

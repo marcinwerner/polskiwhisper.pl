@@ -45,7 +45,10 @@ export function Calculator() {
             Ile czasu zaoszczędzisz
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-[var(--color-fg-muted)]">
-            Średnio piszemy 40 słów na minutę. Mówimy - 130. Policz sam.
+            Mowa jest <strong className="text-[var(--color-fg)]">3× szybsza</strong> niż
+            klawiatura - i ma 20% mniej literówek.
+            <br className="hidden sm:block" />
+            Sprawdź ile to dla Ciebie.
           </p>
         </motion.div>
 
@@ -117,6 +120,20 @@ export function Calculator() {
               Pobierz teraz, oszczędzaj jutro
             </motion.a>
           </div>
+
+          {/* Research source */}
+          <p className="mt-6 text-center text-xs text-[var(--color-fg-subtle)]">
+            Źródło:{" "}
+            <a
+              href="https://arxiv.org/abs/1608.07323"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline decoration-[var(--color-border)] underline-offset-2 transition-colors hover:text-[var(--color-fg-muted)] hover:decoration-[var(--color-fg-subtle)]"
+            >
+              Stanford / Baidu / UW (2016)
+            </a>{" "}
+            - n=32, mowa 3× szybsza, 20% mniej błędów niż klawiatura
+          </p>
         </motion.div>
       </div>
     </section>

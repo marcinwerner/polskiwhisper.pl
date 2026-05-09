@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Apple, MonitorDot, ExternalLink, CheckCircle2 } from "lucide-react";
+import { Apple, MonitorDot, Download as DownloadIcon, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/cn";
 
@@ -15,8 +15,8 @@ const PLATFORMS = {
     status: "Stabilna",
     statusColor: "text-[var(--color-success)]",
     downloadUrl:
-      "https://github.com/marcinwerner/polskiwhisper.pl/releases/latest",
-    downloadLabel: "Pobierz .dmg",
+      "https://github.com/marcinwerner/polskiwhisper.pl/releases/download/v0.1.5/PolskiWhisper-0.1.5.dmg",
+    downloadLabel: "Pobierz .dmg (6 MB)",
     requirements: [
       "macOS 14 Sonoma lub nowszy",
       "Apple Silicon (M1/M2/M3/M4)",
@@ -36,7 +36,7 @@ const PLATFORMS = {
     status: "Pre-release",
     statusColor: "text-accent",
     downloadUrl:
-      "https://github.com/marcinwerner/polskiwhisper.pl/releases/tag/win-v0.1.0-preview",
+      "https://github.com/marcinwerner/polskiwhisper.pl/releases/download/win-v0.1.0-preview/PolskiWhisper-0.1.0-preview-win-x64.zip",
     downloadLabel: "Pobierz .zip (113 MB)",
     requirements: [
       "Windows 10 1809+ lub Windows 11",
@@ -123,11 +123,12 @@ export function Download() {
 
             <a
               href={data.downloadUrl}
-              className="mt-6 flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-accent px-6 text-base font-semibold text-[var(--color-accent-fg)] shadow-[var(--shadow-glow)] transition-all hover:bg-accent-hover active:scale-[0.98]"
+              download
+              className="group relative mt-6 flex h-14 w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-accent px-6 text-base font-semibold text-[var(--color-accent-fg)] shadow-[var(--shadow-glow)] transition-all hover:bg-accent-hover hover:shadow-[0_0_60px_oklch(0.55_0.22_18/0.5)] active:scale-[0.98]"
             >
-              <data.icon className="h-5 w-5" />
+              <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+              <DownloadIcon className="h-5 w-5" />
               {data.downloadLabel}
-              <ExternalLink className="ml-1 h-4 w-4 opacity-60" />
             </a>
 
             {/* Requirements */}

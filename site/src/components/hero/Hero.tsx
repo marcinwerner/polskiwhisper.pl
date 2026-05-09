@@ -6,10 +6,11 @@ import { useRef } from "react";
 import { Waveform } from "./Waveform";
 import { Typewriter } from "./Typewriter";
 
+// Direct asset URLs - GitHub counts each as a download
 const MACOS_RELEASE_URL =
-  "https://github.com/marcinwerner/polskiwhisper.pl/releases/latest";
+  "https://github.com/marcinwerner/polskiwhisper.pl/releases/download/v0.1.5/PolskiWhisper-0.1.5.dmg";
 const WINDOWS_RELEASE_URL =
-  "https://github.com/marcinwerner/polskiwhisper.pl/releases/tag/win-v0.1.0-preview";
+  "https://github.com/marcinwerner/polskiwhisper.pl/releases/download/win-v0.1.0-preview/PolskiWhisper-0.1.0-preview-win-x64.zip";
 const GITHUB_URL = "https://github.com/marcinwerner/polskiwhisper.pl";
 
 export function Hero() {
@@ -120,6 +121,7 @@ export function Hero() {
         >
           <motion.a
             href={MACOS_RELEASE_URL}
+            download
             whileHover={{ scale: 1.04, transition: { duration: 0.2 } }}
             whileTap={{ scale: 0.97 }}
             className="group relative inline-flex h-14 w-full items-center justify-center gap-2.5 overflow-hidden rounded-xl bg-accent px-8 text-base font-semibold text-[var(--color-accent-fg)] shadow-[var(--shadow-glow)] transition-shadow hover:shadow-[0_0_60px_oklch(0.55_0.22_18/0.5)] sm:w-auto"
@@ -130,6 +132,7 @@ export function Hero() {
           </motion.a>
           <motion.a
             href={WINDOWS_RELEASE_URL}
+            download
             whileHover={{ scale: 1.04, transition: { duration: 0.2 } }}
             whileTap={{ scale: 0.97 }}
             className="inline-flex h-14 w-full items-center justify-center gap-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)]/80 px-8 text-base font-semibold backdrop-blur-md transition-colors hover:border-accent/50 hover:bg-[var(--color-bg-subtle)] sm:w-auto"
