@@ -8,8 +8,7 @@
 [![Platform](https://img.shields.io/badge/Windows-10%2B-blue)](windows/README.md)
 [![GitHub stars](https://img.shields.io/github/stars/marcinwerner/polskiwhisper.pl?style=social)](https://github.com/marcinwerner/polskiwhisper.pl/stargazers)
 
-> 🪟 **Wersja Windows**: zobacz [windows/README.md](windows/README.md). Stos: WinUI 3 + C# + Whisper.net.
-> Pełna parytet z macOS - ten sam workflow, te same funkcje, ten sam brand.
+> 🪟 **Wersja Windows**: pre-release [`win-v0.1.0-preview`](https://github.com/marcinwerner/polskiwhisper.pl/releases/tag/win-v0.1.0-preview) (placeholder UI, 113 MB ZIP) - testowa wersja sprawdzająca czy aplikacja w ogóle uruchamia się na Windows. Pełne UI z dyktowaniem w `v0.2.0`. Szczegóły: [windows/README.md](windows/README.md). Stos: WinUI 3 + C# + Whisper.net + .NET 8.
 
 ![PolskiWhisper](docs/screenshots/og-image.jpg)
 

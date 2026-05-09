@@ -1,7 +1,8 @@
 # Architektura - PolskiWhisper Windows
 
-> **Wersja**: 0.1.0 (2026-05-08)
-> **Stack**: WinUI 3 + C# 12 + .NET 8 + Whisper.net
+> **Wersja**: 0.1.0-preview (2026-05-09)
+> **Stack**: WinUI 3 + C# 12 + .NET 8 LTS (8.0.420) + Whisper.net 1.5.0
+> **Status**: pre-release placeholder UI - 12 komponentów wyłączonych w csproj (patrz "Wyłączone komponenty" niżej)
 
 Dokument opisuje strukturę kodu i kluczowe decyzje architektoniczne. Mapping 1:1 z wersją macOS - dla developera z jednym backgroundem łatwo zrozumieć drugą stronę.
 
@@ -316,3 +317,77 @@ WinUI 3 ma jeden UI thread (DispatcherQueue) - wszystkie aktualizacje XAML musz�
 - macOS architektura: [../../docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md) (jeśli istnieje, lub `.internal/ARCHITECTURE.md`)
 - ADR-y macOS: `.internal/DECISIONS.md`
 - macOS HANDOFF: `.internal/HANDOFF-*.md`
+
+---
+
+## Wyłączone komponenty (v0.1.0-preview)
+
+XamlCompiler na CI runner (windows-latest) nie raportuje konkretnych błędów dla complex XAML pages - tylko `MSB3073: XamlCompiler.exe exited with code 1` bez stderr. Z bezpieczeństwa CI tymczasowo wyłączono w `windows/src/PolskiWhisperWin/PolskiWhisperWin.csproj`:
+
+```xml
+<!-- v0.1.0: tymczasowo wyłączamy complex XAML pages aż XamlCompiler issue zostanie zbadany na Windows machine. -->
+<ItemGroup>
+  <Page Remove="Features\UI\Pages\GeneralSettingsPage.xaml" />
+  <Page Remove="Features\UI\Pages\WhisperSettingsPage.xaml" />
+  <Page Remove="Features\UI\Pages\VocabularySettingsPage.xaml" />
+  <Page Remove="Features\UI\Pages\AboutPage.xaml" />
+  <Page Remove="Features\UI\Floating\FloatingDictationWindow.xaml" />
+  <Page Remove="Features\UI\Floating\WaveformView.xaml" />
+  <Page Remove="Onboarding\OnboardingWindow.xaml" />
+  <Page Remove="Onboarding\Steps\WelcomeStep.xaml" />
+  <Page Remove="Onboarding\Steps\MicrophoneStep.xaml" />
+  <Page Remove="Onboarding\Steps\ModelStep.xaml" />
+  <Page Remove="Onboarding\Steps\HotkeyStep.xaml" />
+  <Page Remove="Onboarding\Steps\FinishStep.xaml" />
+
+  <Compile Remove="Features\UI\Pages\**\*.cs" />
+  <Compile Remove="Features\UI\Floating\**\*.cs" />
+  <Compile Remove="Onboarding\**\*.cs" />
+</ItemGroup>
+
+<ItemGroup>
+  <Compile Remove="Features\UI\SoundService.cs" />
+  <Compile Remove="Features\UI\TrayIconController.cs" />
+  <Compile Remove="Features\Updates\NotificationDispatcher.cs" />
+</ItemGroup>
+```
+
+### Co działa w v0.1.0-preview
+
+- **App.xaml + minimal MainWindow** = okno z napisem "PolskiWhisper v0.1.0"
+- **Core library** (Models, Services, Utilities) - skompilowany + tested
+- **Whisper.net wrapper, NAudio recorder, ClipboardPasteService, HotkeyMonitor** - skompilowane (niesprawdzone runtime bez modelu/mikrofonu)
+- **AppCoordinator z DI** + Serilog logger + CrashHandler
+- **DuplicateAppFinder, LaunchAtLoginManager, SelfUpdateInstaller** - skompilowane
+- **ClipboardPasteService** używa **InputSimulatorPlus** 1.0.7 (zmiana z H.InputSimulator który nie miał WindowsInput.Native namespace)
+
+### Plan reaktywacji (target v0.2.0)
+
+1. **Otwórz solution w Visual Studio 2022 lokalnie** na Windows machine
+2. **Usuń jeden `<Page Remove>` w csproj** (zacząć od najprostszego: `WaveformView.xaml`)
+3. **Spróbuj build** w VS - lokalna instalacja XamlCompiler ma full stderr/stdout, pokaże konkretny błąd w XAML
+4. **Fix błąd** (najprawdopodobniej drobne API differences: `xmlns:ui` w root, brakujące using, `x:DataType` vs `DataContext`, brakujące converter dla `bool→Visibility`, etc.)
+5. **Push** do CI - sprawdź czy CI też przechodzi
+6. **Powtórz** dla każdego z 12 komponentów
+
+### Kolejność reaktywacji (sugerowana, od najprostszego do najbardziej skomplikowanego)
+
+1. `WaveformView.xaml` - tylko UserControl z Canvas, najprostsze
+2. `FloatingDictationWindow.xaml` - Window z Border + Grid
+3. `Steps/*.xaml` - 5 prostych Page-ów onboarding (równolegle)
+4. `OnboardingWindow.xaml` - Window z Frame + buttons
+5. `AboutPage.xaml` - Page z hyperlinks (najprostszy z Settings tabs)
+6. `WhisperSettingsPage.xaml` - Page z ListView + DataTemplate
+7. `VocabularySettingsPage.xaml` - Page z drag-drop ListView (najtrudniejszy)
+8. `GeneralSettingsPage.xaml` - Page z toggles + ComboBoxes (uproszczona)
+
+### Reaktywacja code-only komponentów
+
+`SoundService.cs`, `TrayIconController.cs`, `NotificationDispatcher.cs` zależą od plików XAML pośrednio (TrayIcon → MainWindow → Settings, Notification → updates flow). Aktywować razem z odpowiednimi UI komponentami.
+
+### Po reaktywacji
+
+- Update `windows/CHANGELOG.md` - zmiana z `0.1.0-preview` (placeholder) na `0.2.0` (full UI)
+- Update `windows/README.md` - usunąć "Status: pre-release placeholder UI" + tabelę "co tymczasowo wyłączone"
+- Update `windows/docs/ARCHITECTURE.md` - usunąć całą sekcję "Wyłączone komponenty (v0.1.0-preview)"
+- Tag `win-v0.2.0` (full release, nie pre-release)
