@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Keyboard,
   Mic,
+  Command,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/cn";
@@ -41,20 +42,39 @@ const CASES = [
   },
 ] as const;
 
-const AUTO_INTERVAL = 9000;
-const KEYBOARD_CHAR_DELAY = 60; // ms per char - simulates 40 WPM-ish
-const VOICE_REVEAL_DELAY = 1800; // delay before voice version appears
-const POST_REVEAL_PAUSE = 4500; // hold both before next slide
+const KEYBOARD_CHAR_DELAY = 55; // ms per char (~40 WPM)
+const VOICE_RATIO = 1 / 3; // voice finishes at 1/3 of keyboard time
+const HOTKEY_RELEASE_TO_TEXT = 220; // ms between hotkey release and text appear
+const POST_FINISH_HOLD = 4000; // ms to hold final state before next case
+
+type Phase =
+  | "idle"
+  | "running" // both timers ticking, keyboard typing, hotkey pressed, whisper listening
+  | "voice-released" // hotkey just released, brief gap before text
+  | "voice-done" // whisper text shown, voice clock stopped, keyboard still typing
+  | "all-done" // both finished, comparison shown
+  | "next-pending"; // brief rest before next case
 
 export function UseCases() {
   const [current, setCurrent] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [phase, setPhase] = useState<Phase>("idle");
   const [keyboardText, setKeyboardText] = useState("");
   const [voiceShown, setVoiceShown] = useState(false);
-  const [phase, setPhase] = useState<"typing" | "voice" | "done">("typing");
+  const [keyboardElapsed, setKeyboardElapsed] = useState(0);
+  const [voiceElapsed, setVoiceElapsed] = useState(0);
+  const [voiceVisualizer, setVoiceVisualizer] = useState<number[]>(
+    () => new Array(20).fill(0)
+  );
+
+  const sectionStartRef = useRef<number>(0);
   const charIndexRef = useRef(0);
-  const phaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const voiceFinalTimeRef = useRef(0);
+  const keyboardFinalTimeRef = useRef(0);
+  const tickRafRef = useRef<number>(0);
   const charTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const phaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const visualizerRafRef = useRef<number>(0);
 
   const next = useCallback(() => {
     setCurrent((c) => (c + 1) % CASES.length);
@@ -64,16 +84,21 @@ export function UseCases() {
     setCurrent((c) => (c - 1 + CASES.length) % CASES.length);
   }, []);
 
-  // Drive the typing/voice animation for the current case
+  // Single scene effect - all timers scheduled together, cleanup on case change
   useEffect(() => {
-    if (phaseTimerRef.current) clearTimeout(phaseTimerRef.current);
-    if (charTimerRef.current) clearTimeout(charTimerRef.current);
-
     const item = CASES[current];
+    const totalKeyboardMs = item.text.length * KEYBOARD_CHAR_DELAY;
+    const voiceSpeakingMs = totalKeyboardMs * VOICE_RATIO - HOTKEY_RELEASE_TO_TEXT;
+
+    // Reset all state for new case
     setKeyboardText("");
     setVoiceShown(false);
-    setPhase("typing");
+    setKeyboardElapsed(0);
+    setVoiceElapsed(0);
+    setVoiceVisualizer(new Array(20).fill(0));
     charIndexRef.current = 0;
+    voiceFinalTimeRef.current = 0;
+    keyboardFinalTimeRef.current = 0;
 
     const reducedMotion =
       typeof window !== "undefined" &&
@@ -82,53 +107,154 @@ export function UseCases() {
     if (reducedMotion) {
       setKeyboardText(item.text);
       setVoiceShown(true);
-      setPhase("done");
+      voiceFinalTimeRef.current = (voiceSpeakingMs + HOTKEY_RELEASE_TO_TEXT) / 1000;
+      keyboardFinalTimeRef.current = totalKeyboardMs / 1000;
+      setKeyboardElapsed(keyboardFinalTimeRef.current);
+      setVoiceElapsed(voiceFinalTimeRef.current);
+      setPhase("all-done");
       return;
     }
 
-    function typeChar() {
-      const i = charIndexRef.current;
-      if (i < item.text.length) {
-        setKeyboardText(item.text.slice(0, i + 1));
-        charIndexRef.current = i + 1;
-        charTimerRef.current = setTimeout(typeChar, KEYBOARD_CHAR_DELAY);
-      } else {
-        // Trigger voice reveal after delay
-        phaseTimerRef.current = setTimeout(() => {
-          setVoiceShown(true);
-          setPhase("voice");
-          phaseTimerRef.current = setTimeout(() => {
-            setPhase("done");
-          }, POST_REVEAL_PAUSE);
-        }, VOICE_REVEAL_DELAY);
-      }
-    }
+    setPhase("idle");
+    const localTimers: ReturnType<typeof setTimeout>[] = [];
 
-    // Small delay before typing starts
-    phaseTimerRef.current = setTimeout(typeChar, 400);
+    // Pre-roll: 600ms then race starts
+    localTimers.push(
+      setTimeout(() => {
+        sectionStartRef.current = performance.now();
+        setPhase("running");
+
+        // Master tick - both clocks run together
+        function tick() {
+          const now = performance.now();
+          const elapsedSec = (now - sectionStartRef.current) / 1000;
+          setKeyboardElapsed(elapsedSec);
+          // voice clock keeps ticking only until hotkey released
+          if (voiceFinalTimeRef.current === 0) {
+            setVoiceElapsed(elapsedSec);
+          }
+          tickRafRef.current = requestAnimationFrame(tick);
+        }
+        tickRafRef.current = requestAnimationFrame(tick);
+
+        // Voice visualizer animation
+        const vphases = Array.from({ length: 20 }, () => Math.random() * Math.PI * 2);
+        let nextBurst = 0;
+        const heights = new Float32Array(20);
+        let lastFrame = performance.now();
+
+        function visualizerTick() {
+          const now = performance.now();
+          const dt = Math.min(0.05, (now - lastFrame) / 1000);
+          lastFrame = now;
+          const t = now / 1000;
+
+          if (now > nextBurst) {
+            const center = Math.floor(Math.random() * 20);
+            for (let b = -4; b <= 4; b++) {
+              const idx = center + b;
+              if (idx >= 0 && idx < 20) {
+                const falloff = 1 - Math.abs(b) / 4;
+                heights[idx] = Math.max(
+                  heights[idx],
+                  0.5 + Math.random() * 0.5 * falloff
+                );
+              }
+            }
+            nextBurst = now + 80 + Math.random() * 160;
+          }
+
+          const next = new Array(20);
+          for (let i = 0; i < 20; i++) {
+            const wave =
+              Math.sin(t * 7 + vphases[i]) * 0.25 +
+              Math.sin(t * 12 + vphases[i]) * 0.15 +
+              0.1;
+            const target = Math.max(0.04, Math.min(1, wave + heights[i]));
+            const isAttacking = target > heights[i];
+            const rate = isAttacking ? 18 : 5;
+            heights[i] =
+              heights[i] + (target - heights[i]) * Math.min(1, dt * rate);
+            next[i] = heights[i];
+          }
+          setVoiceVisualizer(next);
+          visualizerRafRef.current = requestAnimationFrame(visualizerTick);
+        }
+        visualizerRafRef.current = requestAnimationFrame(visualizerTick);
+
+        // Keyboard typing - independent of phase
+        function typeNextChar() {
+          const i = charIndexRef.current;
+          if (i < item.text.length) {
+            setKeyboardText(item.text.slice(0, i + 1));
+            charIndexRef.current = i + 1;
+            charTimerRef.current = setTimeout(typeNextChar, KEYBOARD_CHAR_DELAY);
+          } else {
+            // Keyboard finished
+            keyboardFinalTimeRef.current =
+              (performance.now() - sectionStartRef.current) / 1000;
+            setKeyboardElapsed(keyboardFinalTimeRef.current);
+            cancelAnimationFrame(tickRafRef.current);
+            setPhase("all-done");
+          }
+        }
+        charTimerRef.current = setTimeout(typeNextChar, KEYBOARD_CHAR_DELAY);
+
+        // Hotkey release at 1/3 mark - voice "stops speaking", processing starts
+        localTimers.push(
+          setTimeout(() => {
+            cancelAnimationFrame(visualizerRafRef.current);
+            setVoiceVisualizer(new Array(20).fill(0));
+            setPhase("voice-released");
+
+            // After processing delay, voice text appears - voice clock freezes
+            localTimers.push(
+              setTimeout(() => {
+                const elapsedSec =
+                  (performance.now() - sectionStartRef.current) / 1000;
+                voiceFinalTimeRef.current = elapsedSec;
+                setVoiceElapsed(elapsedSec);
+                setVoiceShown(true);
+                setPhase("voice-done");
+              }, HOTKEY_RELEASE_TO_TEXT)
+            );
+          }, voiceSpeakingMs)
+        );
+      }, 600)
+    );
 
     return () => {
-      if (phaseTimerRef.current) clearTimeout(phaseTimerRef.current);
+      localTimers.forEach((t) => clearTimeout(t));
       if (charTimerRef.current) clearTimeout(charTimerRef.current);
+      cancelAnimationFrame(tickRafRef.current);
+      cancelAnimationFrame(visualizerRafRef.current);
     };
   }, [current]);
 
-  // Auto-advance carousel after done phase
+  // Auto-advance after all-done
   useEffect(() => {
+    if (phase !== "all-done") return;
     if (isPaused) return;
-    if (phase !== "done") return;
-    const id = setTimeout(next, AUTO_INTERVAL - VOICE_REVEAL_DELAY);
-    return () => clearTimeout(id);
+    phaseTimerRef.current = setTimeout(next, POST_FINISH_HOLD);
+    return () => {
+      if (phaseTimerRef.current) clearTimeout(phaseTimerRef.current);
+    };
   }, [phase, isPaused, next]);
 
   const item = CASES[current];
+  const hotkeyPressed = phase === "running";
+  const voiceReleasing = phase === "voice-released";
+  const isComplete = phase === "all-done";
+  const speedRatio = isComplete && voiceFinalTimeRef.current > 0
+    ? keyboardFinalTimeRef.current / voiceFinalTimeRef.current
+    : 0;
 
   return (
     <section
       id="use-cases"
       className="py-[var(--spacing-section)] bg-[var(--color-bg-subtle)]"
     >
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
@@ -194,32 +320,57 @@ export function UseCases() {
             </p>
           </div>
 
-          {/* Two parallel windows */}
+          {/* Race stage: keyboard | hotkey | whisper */}
           <div className="relative mt-8">
-            <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
+            <div className="grid items-stretch gap-3 md:grid-cols-[1fr_auto_1fr] md:gap-4">
               {/* Keyboard window */}
-              <KeyboardWindow text={keyboardText} fullText={item.text} />
+              <KeyboardWindow
+                text={keyboardText}
+                fullText={item.text}
+                elapsed={keyboardElapsed}
+                isComplete={isComplete}
+                started={phase !== "idle"}
+              />
 
-              {/* Voice window */}
-              <VoiceWindow text={item.text} shown={voiceShown} />
+              {/* Center: hotkey indicator */}
+              <CenterStage
+                hotkeyPressed={hotkeyPressed}
+                voiceReleasing={voiceReleasing}
+                voiceShown={voiceShown}
+              />
+
+              {/* Whisper window */}
+              <VoiceWindow
+                text={item.text}
+                shown={voiceShown}
+                elapsed={voiceElapsed}
+                voiceFinal={voiceFinalTimeRef.current}
+                bars={voiceVisualizer}
+                phase={phase}
+                started={phase !== "idle"}
+              />
             </div>
 
-            {/* Comparison badge - centered between */}
+            {/* Result badge */}
             <div className="mt-6 flex items-center justify-center">
-              <ComparisonBadge phase={phase} />
+              <ResultBadge
+                isComplete={isComplete}
+                speedRatio={speedRatio}
+                phase={phase}
+              />
             </div>
 
-            {/* Navigation arrows */}
+            {/* Mobile arrows */}
             <button
               onClick={prev}
-              className="absolute -left-3 top-[120px] -translate-y-1/2 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-2 text-[var(--color-fg-muted)] transition-all hover:scale-110 hover:text-[var(--color-fg)] sm:-left-5 md:hidden"
+              className="absolute -left-2 top-[170px] -translate-y-1/2 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-2 text-[var(--color-fg-muted)] transition-all hover:scale-110 hover:text-[var(--color-fg)] sm:-left-3 md:hidden"
               aria-label="Poprzedni przykład"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
             <button
               onClick={next}
-              className="absolute -right-3 top-[120px] -translate-y-1/2 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-2 text-[var(--color-fg-muted)] transition-all hover:scale-110 hover:text-[var(--color-fg)] sm:-right-5 md:hidden"
+              className="absolute -right-2 top-[170px] -translate-y-1/2 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-2 text-[var(--color-fg-muted)] transition-all hover:scale-110 hover:text-[var(--color-fg)] sm:-right-3 md:hidden"
               aria-label="Następny przykład"
             >
               <ChevronRight className="h-4 w-4" />
@@ -248,16 +399,31 @@ export function UseCases() {
   );
 }
 
-function KeyboardWindow({ text, fullText }: { text: string; fullText: string }) {
-  const isComplete = text.length >= fullText.length;
-  const wpm = isComplete ? 40 : null;
+function formatTime(seconds: number) {
+  return seconds.toFixed(1) + "s";
+}
+
+function KeyboardWindow({
+  text,
+  fullText,
+  elapsed,
+  isComplete,
+  started,
+}: {
+  text: string;
+  fullText: string;
+  elapsed: number;
+  isComplete: boolean;
+  started: boolean;
+}) {
+  const cursorActive = started && text.length < fullText.length;
 
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated)] p-5 sm:p-6"
+      className="flex flex-col rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated)] p-5 sm:p-6"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -266,40 +432,65 @@ function KeyboardWindow({ text, fullText }: { text: string; fullText: string }) 
             Klawiatura
           </p>
         </div>
-        {wpm && (
-          <motion.span
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="font-mono text-xs text-[var(--color-fg-subtle)] tabular-nums"
-          >
-            ~40 WPM
-          </motion.span>
-        )}
-      </div>
-      <div className="mt-4 min-h-[140px]">
-        <p className="font-mono text-sm leading-relaxed sm:text-base">
-          {text}
+        <div
+          className={cn(
+            "flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-xs tabular-nums transition-colors",
+            isComplete
+              ? "bg-[var(--color-bg-subtle)] text-[var(--color-fg-muted)]"
+              : started
+                ? "bg-[var(--color-bg-subtle)] text-[var(--color-fg)]"
+                : "text-[var(--color-fg-subtle)]"
+          )}
+        >
           <span
             className={cn(
-              "ml-0.5 inline-block w-[2px] -translate-y-[2px] bg-[var(--color-fg)]",
-              isComplete
-                ? "h-4 animate-pulse opacity-50"
-                : "h-4 animate-blink"
+              "h-1.5 w-1.5 rounded-full",
+              cursorActive ? "bg-[var(--color-fg-muted)] animate-pulse" : "bg-[var(--color-border)]"
             )}
           />
+          {formatTime(elapsed)}
+        </div>
+      </div>
+      <div className="mt-4 flex-1 min-h-[140px]">
+        <p className="font-mono text-sm leading-relaxed sm:text-base">
+          {text}
+          {cursorActive && (
+            <span className="ml-0.5 inline-block h-4 w-[2px] -translate-y-[2px] animate-blink bg-[var(--color-fg)]" />
+          )}
         </p>
       </div>
     </motion.div>
   );
 }
 
-function VoiceWindow({ text, shown }: { text: string; shown: boolean }) {
+function VoiceWindow({
+  text,
+  shown,
+  elapsed,
+  voiceFinal,
+  bars,
+  phase,
+  started,
+}: {
+  text: string;
+  shown: boolean;
+  elapsed: number;
+  voiceFinal: number;
+  bars: number[];
+  phase: Phase;
+  started: boolean;
+}) {
+  // Display: live elapsed during running, frozen voiceFinal once done
+  const displayedTime = shown ? voiceFinal : elapsed;
+  const isListening = phase === "running";
+  const isProcessing = phase === "voice-released";
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      className="relative overflow-hidden rounded-2xl border border-accent/30 bg-accent-subtle p-5 sm:p-6"
+      className="relative flex flex-col overflow-hidden rounded-2xl border border-accent/30 bg-accent-subtle p-5 sm:p-6"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -308,26 +499,79 @@ function VoiceWindow({ text, shown }: { text: string; shown: boolean }) {
             PolskiWhisper
           </p>
         </div>
-        {shown && (
-          <motion.span
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="font-mono text-xs text-accent tabular-nums"
-          >
-            ~130 WPM
-          </motion.span>
-        )}
+        <div
+          className={cn(
+            "flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-xs tabular-nums transition-colors",
+            shown
+              ? "bg-accent/20 text-accent font-semibold"
+              : started
+                ? "bg-accent/10 text-accent"
+                : "text-[var(--color-fg-subtle)]"
+          )}
+        >
+          {isListening && (
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent" />
+            </span>
+          )}
+          {!isListening && !shown && started && (
+            <span className="h-1.5 w-1.5 rounded-full bg-accent/60" />
+          )}
+          {shown && <span className="text-accent">✓</span>}
+          {formatTime(displayedTime)}
+        </div>
       </div>
-      <div className="mt-4 min-h-[140px]">
+      <div className="mt-4 flex-1 min-h-[140px]">
+        {/* Listening visualizer */}
         <AnimatePresence>
+          {isListening && (
+            <motion.div
+              key="listening"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex h-full flex-col items-center justify-center gap-3"
+            >
+              <div className="flex h-12 items-center gap-[3px]">
+                {bars.map((v, i) => (
+                  <div
+                    key={i}
+                    className="w-[3px] rounded-full bg-accent"
+                    style={{
+                      height: `${Math.max(3, v * 44)}px`,
+                      opacity: 0.7 + v * 0.3,
+                    }}
+                  />
+                ))}
+              </div>
+              <p className="text-xs font-medium text-accent">Słucham...</p>
+            </motion.div>
+          )}
+
+          {isProcessing && (
+            <motion.div
+              key="processing"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex h-full flex-col items-center justify-center gap-3"
+            >
+              <span className="flex gap-1.5">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-accent [animation-delay:0ms]" />
+                <span className="h-2 w-2 animate-pulse rounded-full bg-accent [animation-delay:150ms]" />
+                <span className="h-2 w-2 animate-pulse rounded-full bg-accent [animation-delay:300ms]" />
+              </span>
+              <p className="text-xs font-medium text-accent">Przetwarzam...</p>
+            </motion.div>
+          )}
+
           {shown && (
             <motion.p
+              key="text"
               initial={{ opacity: 0, scale: 0.95, filter: "blur(8px)" }}
               animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-              transition={{
-                duration: 0.5,
-                ease: [0.16, 1, 0.3, 1],
-              }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               className="font-mono text-sm leading-relaxed sm:text-base"
             >
               {text}
@@ -336,7 +580,7 @@ function VoiceWindow({ text, shown }: { text: string; shown: boolean }) {
         </AnimatePresence>
       </div>
 
-      {/* Burst effect when voice appears */}
+      {/* Burst flash when text appears */}
       <AnimatePresence>
         {shown && (
           <motion.div
@@ -344,14 +588,14 @@ function VoiceWindow({ text, shown }: { text: string; shown: boolean }) {
             className="pointer-events-none absolute inset-0"
             initial={{ opacity: 0 }}
             animate={{
-              opacity: [0, 0.6, 0],
+              opacity: [0, 0.5, 0],
               background: [
                 "radial-gradient(circle at 50% 50%, transparent 0%, transparent 100%)",
                 "radial-gradient(circle at 50% 50%, var(--color-accent) 0%, transparent 70%)",
                 "radial-gradient(circle at 50% 50%, transparent 0%, transparent 100%)",
               ],
             }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.7 }}
           />
         )}
       </AnimatePresence>
@@ -359,35 +603,124 @@ function VoiceWindow({ text, shown }: { text: string; shown: boolean }) {
   );
 }
 
-function ComparisonBadge({ phase }: { phase: "typing" | "voice" | "done" }) {
-  const labels = {
-    typing: "Pisanie na klawiaturze...",
-    voice: "Powiedziane głosem - cały tekst od razu",
-    done: "3× szybciej. Bez literówek.",
+function CenterStage({
+  hotkeyPressed,
+  voiceReleasing,
+  voiceShown,
+}: {
+  hotkeyPressed: boolean;
+  voiceReleasing: boolean;
+  voiceShown: boolean;
+}) {
+  // Hotkey states: pressed (red glow), releasing (transition), released (normal)
+  const status = hotkeyPressed
+    ? "pressed"
+    : voiceReleasing || voiceShown
+      ? "released"
+      : "idle";
+
+  return (
+    <div className="flex flex-row items-center justify-center gap-3 py-2 md:flex-col md:py-0 md:px-2">
+      {/* Hotkey button */}
+      <motion.div
+        animate={{
+          scale: status === "pressed" ? 0.95 : 1,
+        }}
+        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+        className={cn(
+          "relative flex items-center gap-1 rounded-xl border-2 px-3 py-2 font-mono text-sm font-bold transition-all",
+          status === "pressed"
+            ? "border-accent bg-accent text-[var(--color-accent-fg)] shadow-[0_0_24px_oklch(0.55_0.22_18/0.6)] translate-y-[1px]"
+            : "border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-fg)] shadow-md"
+        )}
+      >
+        <Command className="h-3.5 w-3.5" />
+        <span>⌥</span>
+        <span>S</span>
+        {status === "pressed" && (
+          <motion.span
+            className="absolute -inset-2 -z-10 rounded-2xl bg-accent/40 blur-md"
+            animate={{ opacity: [0.5, 0.8, 0.5] }}
+            transition={{ duration: 0.8, repeat: Infinity }}
+          />
+        )}
+      </motion.div>
+
+      {/* State label below */}
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={status}
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 4 }}
+          transition={{ duration: 0.2 }}
+          className={cn(
+            "hidden text-[10px] font-medium uppercase tracking-wider md:block",
+            status === "pressed" ? "text-accent" : "text-[var(--color-fg-subtle)]"
+          )}
+        >
+          {status === "pressed"
+            ? "wciśnięty"
+            : status === "released"
+              ? "puszczony"
+              : "gotowy"}
+        </motion.span>
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function ResultBadge({
+  isComplete,
+  speedRatio,
+  phase,
+}: {
+  isComplete: boolean;
+  speedRatio: number;
+  phase: Phase;
+}) {
+  const status = isComplete
+    ? "done"
+    : phase === "voice-done"
+      ? "voice-done"
+      : phase === "voice-released"
+        ? "processing"
+        : phase === "running"
+          ? "running"
+          : "idle";
+
+  const labels: Record<typeof status, string> = {
+    idle: " ",
+    running: "Klawiatura pisze, PolskiWhisper słucha...",
+    processing: "Hotkey puszczony - przetwarzam...",
+    "voice-done": "PolskiWhisper gotowy. Klawiatura wciąż pisze...",
+    done: speedRatio
+      ? `${speedRatio.toFixed(1)}× szybciej. Bez literówek.`
+      : "Bez literówek.",
   };
 
   return (
     <AnimatePresence mode="wait">
       <motion.div
-        key={phase}
+        key={status}
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -6 }}
         transition={{ duration: 0.3 }}
         className={cn(
-          "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm",
-          phase === "done"
+          "inline-flex min-h-[36px] items-center gap-2 rounded-full border px-4 py-2 text-sm",
+          status === "done"
             ? "border-accent/40 bg-accent-subtle text-accent font-semibold"
             : "border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated)] text-[var(--color-fg-muted)]"
         )}
       >
-        {phase === "voice" && (
+        {status === "running" && (
           <span className="relative flex h-2 w-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
           </span>
         )}
-        {labels[phase]}
+        {labels[status]}
       </motion.div>
     </AnimatePresence>
   );
