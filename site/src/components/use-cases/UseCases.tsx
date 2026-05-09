@@ -23,14 +23,14 @@ const CASES = [
     title: "Programista",
     scenario: "Komentarz w kodzie, prompt do AI, opis pull requesta.",
     text: "TODO naprawić ten endpoint żeby zwracał prawidłowe dane dla użytkowników z polskimi znakami w imieniu",
-    keyboardSpeed: 0.65, // pro touch typist
+    keyboardSpeed: 0.52, // pro touch typist - additional 20% faster
   },
   {
     icon: PenTool,
     title: "Pisarz",
     scenario: "Szkic artykułu, odpowiedź na maile, post na blog.",
     text: "Trzeba napisać artykuł o nowych trendach w technologii, które zmieniają sposób w jaki pracujemy.",
-    keyboardSpeed: 0.72, // doświadczony piszący
+    keyboardSpeed: 0.65, // doświadczony piszący - additional 10% faster
   },
   {
     icon: BookOpen,
