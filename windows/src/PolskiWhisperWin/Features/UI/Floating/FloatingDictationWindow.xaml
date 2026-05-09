@@ -42,15 +42,17 @@
                            Visibility="Collapsed" />
             </Grid>
 
-            <TextBlock x:Name="HintLabel"
-                       Grid.Column="2"
-                       Text="Esc"
-                       Margin="12,0,0,0"
-                       Padding="6,2,6,2"
-                       FontSize="10"
-                       Foreground="#AAFFFFFF"
-                       VerticalAlignment="Center"
-                       Background="#22FFFFFF" />
+            <Border x:Name="HintLabel"
+                    Grid.Column="2"
+                    Margin="12,0,0,0"
+                    Padding="6,2,6,2"
+                    Background="#22FFFFFF"
+                    CornerRadius="4"
+                    VerticalAlignment="Center">
+                <TextBlock Text="Esc"
+                           FontSize="10"
+                           Foreground="#AAFFFFFF" />
+            </Border>
         </Grid>
     </Border>
 </Window>
