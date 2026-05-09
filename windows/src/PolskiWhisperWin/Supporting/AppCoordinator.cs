@@ -211,8 +211,15 @@ public sealed class AppCoordinator
 
         if (update is { IsNewer: true })
         {
-            // v0.1.0: NotificationDispatcher tymczasowo wyłączony - log only.
             Logger.LogInformation("Dostępna nowa wersja {Version}.", update.LatestVersion);
+            try
+            {
+                Services.GetRequiredService<NotificationDispatcher>().ShowUpdateAvailable(update);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "NotificationDispatcher.ShowUpdateAvailable nieudane.");
+            }
         }
     }
 
@@ -249,8 +256,8 @@ public sealed class AppCoordinator
         services.AddSingleton<LaunchAtLoginManager>();
         services.AddSingleton<SelfUpdateInstaller>();
         services.AddSingleton<SoundService>();
-        // v0.1.0: TrayIconController, NotificationDispatcher wyłączone w csproj
-        // (zależą od UI Pages które są tymczasowo disabled).
+        services.AddSingleton<NotificationDispatcher>();
+        // v0.1.0: TrayIconController wyłączone w csproj (H.NotifyIcon, czeka na FloatingWindow).
 
         // Orchestrator.
         services.AddSingleton<DictationEngine>();
