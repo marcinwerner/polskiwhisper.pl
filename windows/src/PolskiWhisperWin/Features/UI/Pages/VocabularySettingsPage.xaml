@@ -3,10 +3,7 @@
     x:Class="PolskiWhisperWin.Features.UI.Pages.VocabularySettingsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markupcompatibility/2006"
-    xmlns:models="using:PolskiWhisperWin.Core.Models"
-    mc:Ignorable="d">
+    xmlns:models="using:PolskiWhisperWin.Core.Models">
 
     <Grid Padding="32,16,32,32">
         <Grid.RowDefinitions>

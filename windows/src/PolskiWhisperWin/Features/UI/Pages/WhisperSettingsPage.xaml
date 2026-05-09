@@ -3,10 +3,7 @@
     x:Class="PolskiWhisperWin.Features.UI.Pages.WhisperSettingsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markupcompatibility/2006"
-    xmlns:models="using:PolskiWhisperWin.Core.Models"
-    mc:Ignorable="d">
+    xmlns:models="using:PolskiWhisperWin.Core.Models">
 
     <ScrollViewer Padding="32,16,32,32">
         <StackPanel Spacing="16" MaxWidth="800" HorizontalAlignment="Stretch">
