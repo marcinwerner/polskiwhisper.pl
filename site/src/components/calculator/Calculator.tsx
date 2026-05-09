@@ -1,14 +1,22 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { motion } from "motion/react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import {
+  motion,
+  useMotionValue,
+  useSpring,
+  useTransform,
+  useInView,
+} from "motion/react";
 
 const TYPING_WPM = 40;
 const SPEAKING_WPM = 130;
-const EFFICIENCY = 0.7; // not all typing can be replaced
+const EFFICIENCY = 0.7;
 
 export function Calculator() {
   const [minutesPerDay, setMinutesPerDay] = useState(90);
+  const sectionRef = useRef<HTMLElement>(null);
+  const inView = useInView(sectionRef, { once: true, margin: "-80px" });
 
   const savings = useMemo(() => {
     const typingWordsPerDay = minutesPerDay * TYPING_WPM;
@@ -25,18 +33,28 @@ export function Calculator() {
   }, [minutesPerDay]);
 
   return (
-    <section className="py-[var(--spacing-section)]">
+    <section ref={sectionRef} className="py-[var(--spacing-section)]">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="text-center"
+        >
           <h2 className="text-3xl font-bold sm:text-4xl">
             Ile czasu zaoszczędzisz
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-[var(--color-fg-muted)]">
             Średnio piszemy 40 słów na minutę. Mówimy - 130. Policz sam.
           </p>
-        </div>
+        </motion.div>
 
-        <div className="mt-12 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated)] p-6 sm:p-8">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          className="relative mt-12 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated)] p-6 sm:p-8"
+        >
           {/* Slider */}
           <div>
             <label
@@ -55,7 +73,7 @@ export function Calculator() {
                 value={minutesPerDay}
                 onChange={(e) => setMinutesPerDay(Number(e.target.value))}
                 className="w-full accent-[var(--color-accent)] h-2 rounded-full bg-[var(--color-border)] appearance-none cursor-pointer
-                  [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:shadow-[var(--shadow-glow)] [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:active:scale-125"
+                  [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:shadow-[var(--shadow-glow)] [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:active:scale-125 [&::-webkit-slider-thumb]:hover:scale-110"
               />
               <span className="min-w-[4rem] text-right text-lg font-bold tabular-nums">
                 {minutesPerDay} min
@@ -69,29 +87,37 @@ export function Calculator() {
               value={savings.minutesPerDay}
               unit="min / dzień"
               delay={0}
+              decimals={0}
+              animate={inView}
             />
             <ResultCard
               value={savings.hoursPerWeek}
               unit="godz. / tydzień"
-              delay={0.08}
+              delay={0.1}
+              decimals={1}
+              animate={inView}
             />
             <ResultCard
               value={savings.daysPerYear}
               unit="dni / rok"
-              delay={0.16}
+              delay={0.2}
+              decimals={1}
               highlight
+              animate={inView}
             />
           </div>
 
-          <div className="mt-6 text-center">
-            <a
+          <div className="mt-8 text-center">
+            <motion.a
               href="#download"
-              className="inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-[var(--color-accent-fg)] transition-all hover:bg-accent-hover active:scale-[0.98]"
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+              className="inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-[var(--color-accent-fg)] shadow-[var(--shadow-glow)] transition-shadow hover:shadow-[0_0_48px_oklch(0.55_0.22_18/0.4)]"
             >
               Pobierz teraz, oszczędzaj jutro
-            </a>
+            </motion.a>
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );
@@ -101,37 +127,64 @@ function ResultCard({
   value,
   unit,
   delay,
+  decimals,
   highlight,
+  animate,
 }: {
   value: number;
   unit: string;
   delay: number;
+  decimals: number;
   highlight?: boolean;
+  animate: boolean;
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      whileInView={{ opacity: 1, scale: 1 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.4, delay, ease: [0.16, 1, 0.3, 1] }}
-      className={`rounded-xl border p-5 text-center ${
+      initial={{ opacity: 0, scale: 0.9, y: 20 }}
+      animate={animate ? { opacity: 1, scale: 1, y: 0 } : {}}
+      transition={{ duration: 0.5, delay: delay + 0.3, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      className={`relative overflow-hidden rounded-xl border p-5 text-center transition-shadow ${
         highlight
-          ? "border-accent/30 bg-accent-subtle"
-          : "border-[var(--color-border-subtle)] bg-[var(--color-bg)]"
+          ? "border-accent/30 bg-accent-subtle hover:shadow-[0_8px_32px_oklch(0.55_0.22_18/0.2)]"
+          : "border-[var(--color-border-subtle)] bg-[var(--color-bg)] hover:shadow-lg"
       }`}
     >
-      <motion.p
-        key={value}
-        initial={{ opacity: 0.5, y: -4 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.2 }}
-        className={`text-3xl font-bold tabular-nums ${
+      {highlight && (
+        <div className="absolute -inset-1 -z-10 bg-gradient-to-br from-accent/0 via-accent/10 to-accent/0 opacity-50 blur-xl" />
+      )}
+      <SpringNumber
+        value={value}
+        decimals={decimals}
+        className={`text-3xl font-bold tabular-nums sm:text-4xl ${
           highlight ? "text-accent" : ""
         }`}
-      >
-        {value}
-      </motion.p>
+      />
       <p className="mt-1 text-sm text-[var(--color-fg-muted)]">{unit}</p>
     </motion.div>
   );
+}
+
+function SpringNumber({
+  value,
+  decimals,
+  className,
+}: {
+  value: number;
+  decimals: number;
+  className: string;
+}) {
+  const motionValue = useMotionValue(value);
+  const spring = useSpring(motionValue, {
+    stiffness: 90,
+    damping: 30,
+    mass: 1,
+  });
+  const display = useTransform(spring, (v) => v.toFixed(decimals));
+
+  useEffect(() => {
+    motionValue.set(value);
+  }, [value, motionValue]);
+
+  return <motion.p className={className}>{display}</motion.p>;
 }

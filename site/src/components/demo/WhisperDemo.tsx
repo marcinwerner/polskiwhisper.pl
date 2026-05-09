@@ -45,27 +45,52 @@ export function WhisperDemo() {
   const loadModel = useCallback(async () => {
     setState("loading-model");
     setProgress(0);
-    setProgressLabel("Pobieranie modelu Whisper Tiny (~40 MB)...");
+    setProgressLabel("Inicjalizacja...");
     setError("");
 
     try {
-      const { pipeline, env } = await import("@huggingface/transformers");
+      const transformers = await import("@huggingface/transformers");
+      const { pipeline, env } = transformers;
       env.allowLocalModels = false;
+      env.allowRemoteModels = true;
+
+      // Try WebGPU if available (M1/M2 Mac, modern Windows GPU), fallback to WASM
+      const hasWebGPU =
+        typeof navigator !== "undefined" &&
+        "gpu" in navigator &&
+        navigator.gpu != null;
+
+      const device = hasWebGPU ? "webgpu" : "wasm";
+      const dtype = hasWebGPU ? "fp32" : "q8";
+
+      console.info(`[WhisperDemo] Loading model: device=${device} dtype=${dtype}`);
+      setProgressLabel(
+        hasWebGPU
+          ? "Pobieranie modelu (WebGPU, ~70 MB)..."
+          : "Pobieranie modelu (WASM, ~40 MB)..."
+      );
 
       const pipe = await pipeline(
         "automatic-speech-recognition",
         MODEL_ID,
         {
-          dtype: "q8",
-          device: "wasm",
-          progress_callback: (p: { status: string; progress?: number; file?: string }) => {
+          dtype,
+          device,
+          progress_callback: (p: {
+            status: string;
+            progress?: number;
+            file?: string;
+            loaded?: number;
+            total?: number;
+          }) => {
+            console.info(`[WhisperDemo] ${p.status}`, p.file ?? "", p.progress ?? "");
             if (p.status === "progress" && p.progress != null) {
               setProgress(Math.round(p.progress));
               setProgressLabel(
                 `Pobieranie: ${p.file?.split("/").pop() ?? "model"}`
               );
             }
-            if (p.status === "done") {
+            if (p.status === "ready" || p.status === "done") {
               setProgressLabel("Model gotowy");
             }
           },
@@ -75,10 +100,22 @@ export function WhisperDemo() {
       pipelineRef.current = pipe;
       setState("ready");
     } catch (err) {
-      console.error("Model load error:", err);
-      setError(
-        "Nie udało się pobrać modelu. Sprawdź połączenie z internetem."
-      );
+      console.error("[WhisperDemo] Model load error:", err);
+      const msg = err instanceof Error ? err.message : String(err);
+
+      // More descriptive error based on common failure modes
+      let userMsg = "Nie udało się załadować modelu.";
+      if (msg.includes("fetch") || msg.includes("network")) {
+        userMsg += " Sprawdź połączenie z internetem.";
+      } else if (msg.includes("WebGPU") || msg.includes("gpu")) {
+        userMsg += " Twoja przeglądarka nie wspiera WebGPU - spróbuj odświeżyć stronę.";
+      } else if (msg.includes("memory") || msg.includes("Memory")) {
+        userMsg += " Brak pamięci - zamknij niepotrzebne karty i spróbuj ponownie.";
+      } else {
+        userMsg += ` (${msg.slice(0, 80)})`;
+      }
+
+      setError(userMsg);
       setState("error");
     }
   }, []);

@@ -6,15 +6,38 @@ const BAR_COUNT = 64;
 const BAR_GAP = 3;
 const MIN_HEIGHT = 0.08;
 
+function readThemeColors() {
+  const isLight = document.documentElement.classList.contains("light");
+  return isLight
+    ? { neutralR: 30, neutralG: 30, neutralB: 35, redR: 214, redG: 57, redB: 64 }
+    : { neutralR: 255, neutralG: 255, neutralB: 255, redR: 214, redG: 57, redB: 64 };
+}
+
 export function Waveform() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameRef = useRef<number>(0);
   const reducedMotion = useRef(false);
+  const colorsRef = useRef(
+    typeof window !== "undefined"
+      ? readThemeColors()
+      : { neutralR: 255, neutralG: 255, neutralB: 255, redR: 214, redG: 57, redB: 64 }
+  );
 
   useEffect(() => {
     reducedMotion.current = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
+
+    colorsRef.current = readThemeColors();
+
+    // React to theme toggle
+    const observer = new MutationObserver(() => {
+      colorsRef.current = readThemeColors();
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -48,6 +71,7 @@ export function Waveform() {
 
       const barWidth = (w - (BAR_COUNT - 1) * BAR_GAP) / BAR_COUNT;
       const centerX = w / 2;
+      const { neutralR, neutralG, neutralB, redR, redG, redB } = colorsRef.current;
 
       for (let i = 0; i < BAR_COUNT; i++) {
         const x = i * (barWidth + BAR_GAP);
@@ -69,13 +93,14 @@ export function Waveform() {
         const y = (h - actualH) / 2;
 
         const progress = i / BAR_COUNT;
-        const isWhite = progress < 0.45 || progress > 0.85;
+        const isRed = progress >= 0.4 && progress <= 0.85;
 
-        if (isWhite) {
-          ctx.fillStyle = `rgba(255, 255, 255, ${0.25 + envelope * 0.45})`;
+        if (isRed) {
+          const intensity = 0.35 + envelope * 0.55;
+          ctx.fillStyle = `rgba(${redR}, ${redG}, ${redB}, ${intensity})`;
         } else {
-          const redIntensity = 0.35 + envelope * 0.55;
-          ctx.fillStyle = `rgba(196, 30, 58, ${redIntensity})`;
+          const intensity = 0.2 + envelope * 0.4;
+          ctx.fillStyle = `rgba(${neutralR}, ${neutralG}, ${neutralB}, ${intensity})`;
         }
 
         const radius = Math.min(barWidth / 2, 2);
@@ -93,13 +118,15 @@ export function Waveform() {
     return () => {
       cancelAnimationFrame(frameRef.current);
       window.removeEventListener("resize", resize);
+      observer.disconnect();
     };
   }, []);
 
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 h-full w-full opacity-40 pointer-events-none"
+      className="absolute inset-0 h-full w-full pointer-events-none"
+      style={{ opacity: "var(--waveform-opacity, 0.45)" }}
       aria-hidden="true"
     />
   );

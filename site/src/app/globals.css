@@ -160,3 +160,52 @@ section[id] {
 h1, h2, h3 {
   text-wrap: balance;
 }
+
+/* ── Cursor blink ── */
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.animate-blink {
+  animation: blink 0.9s step-end infinite;
+}
+
+/* ── Subtle gradient mesh background ── */
+@keyframes mesh-pan {
+  0% { transform: translate(0%, 0%) rotate(0deg); }
+  50% { transform: translate(2%, -2%) rotate(180deg); }
+  100% { transform: translate(0%, 0%) rotate(360deg); }
+}
+
+.gradient-mesh {
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(circle at 20% 30%, oklch(0.55 0.22 18 / 0.18) 0%, transparent 40%),
+    radial-gradient(circle at 80% 60%, oklch(0.55 0.22 18 / 0.10) 0%, transparent 40%),
+    radial-gradient(circle at 50% 80%, oklch(0.55 0.22 18 / 0.08) 0%, transparent 40%);
+  filter: blur(40px);
+  pointer-events: none;
+  animation: mesh-pan 20s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gradient-mesh, .animate-blink {
+    animation: none !important;
+  }
+}
+
+/* ── Floating elements (subtle Apple-style) ── */
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.float-slow {
+  animation: float-slow 6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .float-slow { animation: none !important; }
+}
