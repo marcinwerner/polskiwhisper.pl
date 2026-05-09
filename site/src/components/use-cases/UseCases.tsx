@@ -443,24 +443,37 @@ export function UseCases() {
             ))}
           </div>
 
-          {/* Scenario header */}
+          {/* Scenario header - reserved fixed height to prevent shift */}
           <div className="mt-8 text-center">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={current}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.3 }}
-                className="flex items-center justify-center gap-3"
-              >
-                <item.icon className="h-5 w-5 text-accent" />
-                <h3 className="text-xl font-semibold">{item.title}</h3>
-              </motion.div>
-            </AnimatePresence>
-            <p className="mt-2 text-sm text-[var(--color-fg-muted)]">
-              {item.scenario}
-            </p>
+            <div className="relative h-7">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={current}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.3 }}
+                  className="absolute inset-0 flex items-center justify-center gap-3"
+                >
+                  <item.icon className="h-5 w-5 text-accent" />
+                  <h3 className="text-xl font-semibold">{item.title}</h3>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+            <div className="relative mt-2 h-5">
+              <AnimatePresence mode="wait">
+                <motion.p
+                  key={current}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute inset-0 text-sm text-[var(--color-fg-muted)]"
+                >
+                  {item.scenario}
+                </motion.p>
+              </AnimatePresence>
+            </div>
           </div>
 
           {/* Race stage: keyboard | hotkey | whisper */}
@@ -494,8 +507,8 @@ export function UseCases() {
               />
             </div>
 
-            {/* Result badge */}
-            <div className="mt-6 flex items-center justify-center">
+            {/* Result badge - reserved fixed height to prevent shift */}
+            <div className="mt-6 flex h-12 items-center justify-center">
               <ResultBadge
                 isComplete={isComplete}
                 speedRatio={speedRatio}
@@ -851,9 +864,9 @@ function ResultBadge({
 
   const labels: Record<typeof status, string> = {
     idle: " ",
-    running: "Klawiatura pisze, PolskiWhisper słucha...",
-    processing: "Hotkey puszczony - przetwarzam...",
-    "voice-done": "PolskiWhisper gotowy. Klawiatura wciąż pisze...",
+    running: "Pisanie i słuchanie",
+    processing: "Przetwarzam transkrypcję",
+    "voice-done": "Whisper gotowy, klawiatura pisze",
     done: speedRatio
       ? `${speedRatio.toFixed(1)}× szybciej. Bez literówek.`
       : "Bez literówek.",
@@ -868,7 +881,7 @@ function ResultBadge({
         exit={{ opacity: 0, y: -6 }}
         transition={{ duration: 0.3 }}
         className={cn(
-          "inline-flex min-h-[36px] items-center gap-2 rounded-full border px-4 py-2 text-sm",
+          "inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-full border px-4 text-sm",
           status === "done"
             ? "border-accent/40 bg-accent-subtle text-accent font-semibold"
             : "border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated)] text-[var(--color-fg-muted)]"
