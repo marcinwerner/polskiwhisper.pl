@@ -42,10 +42,55 @@ const CASES = [
   },
 ] as const;
 
-const KEYBOARD_CHAR_DELAY = 55; // ms per char (~40 WPM)
-const VOICE_RATIO = 1 / 3; // voice finishes at 1/3 of keyboard time
-const HOTKEY_RELEASE_TO_TEXT = 220; // ms between hotkey release and text appear
-const POST_FINISH_HOLD = 4000; // ms to hold final state before next case
+// Realistic timings: speech at ~140 WPM, Whisper processing on M1 ~600-900ms
+const SPEECH_WPM = 140; // average natural speech rate
+const SPEECH_MS_PER_WORD = 60_000 / SPEECH_WPM; // ~428ms
+const PROCESSING_MS = 700; // realistic Whisper-on-M1 transcription delay
+const KEYBOARD_SPEED_RATIO = 3; // Stanford 2016: speech is 3x faster
+const POST_FINISH_HOLD = 2800; // ms to hold final state before next case
+
+// Natural typing variability
+const KEYBOARD_JITTER_MIN = 0.6;
+const KEYBOARD_JITTER_MAX = 1.5;
+const PAUSE_EVERY_MIN_CHARS = 8;
+const PAUSE_EVERY_MAX_CHARS = 18;
+const PAUSE_DURATION_MIN = 180;
+const PAUSE_DURATION_MAX = 480;
+const TYPO_PROBABILITY = 0.08; // 8% of words have a typo to correct
+const TYPO_BACKSPACE_DELAY = [60, 120] as const; // ms
+
+function pickTimings(text: string) {
+  const words = text.split(/\s+/).filter(Boolean).length;
+  const voiceSpeakingMs = words * SPEECH_MS_PER_WORD;
+  const voiceTotalMs = voiceSpeakingMs + PROCESSING_MS;
+  const keyboardTotalMs = voiceTotalMs * KEYBOARD_SPEED_RATIO;
+  const baseCharDelayMs = keyboardTotalMs / Math.max(1, text.length);
+  return { voiceSpeakingMs, voiceTotalMs, keyboardTotalMs, baseCharDelayMs };
+}
+
+function randInt(min: number, max: number) {
+  return min + Math.floor(Math.random() * (max - min + 1));
+}
+
+function randFloat(min: number, max: number) {
+  return min + Math.random() * (max - min);
+}
+
+const TYPO_NEIGHBORS: Record<string, string> = {
+  a: "sq", b: "vn", c: "xv", d: "fs", e: "rw", f: "gd", g: "hf", h: "jg",
+  i: "uo", j: "kh", k: "lj", l: "k", m: "n", n: "mb", o: "ip", p: "ol",
+  q: "wa", r: "te", s: "da", t: "ry", u: "iy", v: "cb", w: "qe", x: "zc",
+  y: "tu", z: "x", "ą": "ao", "ć": "cv", "ę": "ew", "ł": "kl", "ń": "nm",
+  "ó": "po", "ś": "sd", "ź": "xz", "ż": "zx",
+};
+
+function pickTypo(correctChar: string): string | null {
+  const lower = correctChar.toLowerCase();
+  const neighbors = TYPO_NEIGHBORS[lower];
+  if (!neighbors) return null;
+  const wrong = neighbors[randInt(0, neighbors.length - 1)];
+  return correctChar === correctChar.toUpperCase() ? wrong.toUpperCase() : wrong;
+}
 
 type Phase =
   | "idle"
@@ -87,8 +132,8 @@ export function UseCases() {
   // Single scene effect - all timers scheduled together, cleanup on case change
   useEffect(() => {
     const item = CASES[current];
-    const totalKeyboardMs = item.text.length * KEYBOARD_CHAR_DELAY;
-    const voiceSpeakingMs = totalKeyboardMs * VOICE_RATIO - HOTKEY_RELEASE_TO_TEXT;
+    const { voiceSpeakingMs, voiceTotalMs, keyboardTotalMs, baseCharDelayMs } =
+      pickTimings(item.text);
 
     // Reset all state for new case
     setKeyboardText("");
@@ -107,8 +152,8 @@ export function UseCases() {
     if (reducedMotion) {
       setKeyboardText(item.text);
       setVoiceShown(true);
-      voiceFinalTimeRef.current = (voiceSpeakingMs + HOTKEY_RELEASE_TO_TEXT) / 1000;
-      keyboardFinalTimeRef.current = totalKeyboardMs / 1000;
+      voiceFinalTimeRef.current = voiceTotalMs / 1000;
+      keyboardFinalTimeRef.current = keyboardTotalMs / 1000;
       setKeyboardElapsed(keyboardFinalTimeRef.current);
       setVoiceElapsed(voiceFinalTimeRef.current);
       setPhase("all-done");
@@ -182,25 +227,90 @@ export function UseCases() {
         }
         visualizerRafRef.current = requestAnimationFrame(visualizerTick);
 
-        // Keyboard typing - independent of phase
-        function typeNextChar() {
-          const i = charIndexRef.current;
-          if (i < item.text.length) {
-            setKeyboardText(item.text.slice(0, i + 1));
-            charIndexRef.current = i + 1;
-            charTimerRef.current = setTimeout(typeNextChar, KEYBOARD_CHAR_DELAY);
-          } else {
-            // Keyboard finished
+        // Keyboard typing - natural with jitter, pauses, occasional typos
+        // Plan: build a sequence of "actions" upfront for the full text
+        type Action =
+          | { type: "char"; ch: string; delay: number }
+          | { type: "typo"; wrong: string; delay: number }
+          | { type: "backspace"; delay: number };
+
+        const actions: Action[] = [];
+        let charsUntilPause = randInt(PAUSE_EVERY_MIN_CHARS, PAUSE_EVERY_MAX_CHARS);
+        let wordChars = 0;
+
+        for (let i = 0; i < item.text.length; i++) {
+          const ch = item.text[i];
+          const isWordBoundary = ch === " " || ch === "," || ch === "." || ch === "-";
+
+          // Per-char delay with jitter
+          const jitter = randFloat(KEYBOARD_JITTER_MIN, KEYBOARD_JITTER_MAX);
+          let delay = baseCharDelayMs * jitter;
+
+          // Insert occasional thinking pause before this char
+          charsUntilPause--;
+          if (charsUntilPause <= 0 && i > 3 && i < item.text.length - 3) {
+            delay += randFloat(PAUSE_DURATION_MIN, PAUSE_DURATION_MAX);
+            charsUntilPause = randInt(PAUSE_EVERY_MIN_CHARS, PAUSE_EVERY_MAX_CHARS);
+          }
+
+          // Maybe inject a typo at start of word
+          if (
+            !isWordBoundary &&
+            wordChars === 0 &&
+            i > 0 &&
+            i < item.text.length - 4 &&
+            Math.random() < TYPO_PROBABILITY
+          ) {
+            const wrong = pickTypo(ch);
+            if (wrong && wrong !== ch) {
+              actions.push({ type: "typo", wrong, delay });
+              actions.push({
+                type: "backspace",
+                delay: randFloat(TYPO_BACKSPACE_DELAY[0], TYPO_BACKSPACE_DELAY[1]),
+              });
+              // The correct char follows with a small recovery delay
+              delay = randFloat(80, 160);
+            }
+          }
+
+          actions.push({ type: "char", ch, delay });
+
+          if (isWordBoundary) wordChars = 0;
+          else wordChars++;
+        }
+
+        // Execute action sequence
+        let actionIdx = 0;
+        function runNextAction() {
+          if (actionIdx >= actions.length) {
             keyboardFinalTimeRef.current =
               (performance.now() - sectionStartRef.current) / 1000;
             setKeyboardElapsed(keyboardFinalTimeRef.current);
             cancelAnimationFrame(tickRafRef.current);
             setPhase("all-done");
+            return;
           }
+          const a = actions[actionIdx];
+          charTimerRef.current = setTimeout(() => {
+            if (a.type === "char") {
+              charIndexRef.current += 1;
+              setKeyboardText(item.text.slice(0, charIndexRef.current));
+            } else if (a.type === "typo") {
+              // Show current text + wrong char appended
+              setKeyboardText(
+                item.text.slice(0, charIndexRef.current) + a.wrong
+              );
+            } else if (a.type === "backspace") {
+              // Remove the typo char (back to confirmed text)
+              setKeyboardText(item.text.slice(0, charIndexRef.current));
+            }
+            actionIdx++;
+            runNextAction();
+          }, a.delay);
         }
-        charTimerRef.current = setTimeout(typeNextChar, KEYBOARD_CHAR_DELAY);
+        runNextAction();
 
-        // Hotkey release at 1/3 mark - voice "stops speaking", processing starts
+        // Hotkey release after voice finishes speaking - processing starts
         localTimers.push(
           setTimeout(() => {
             cancelAnimationFrame(visualizerRafRef.current);
@@ -216,7 +326,7 @@ export function UseCases() {
                 setVoiceElapsed(elapsedSec);
                 setVoiceShown(true);
                 setPhase("voice-done");
-              }, HOTKEY_RELEASE_TO_TEXT)
+              }, PROCESSING_MS)
             );
           }, voiceSpeakingMs)
         );
