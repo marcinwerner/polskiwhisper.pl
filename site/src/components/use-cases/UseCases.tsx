@@ -451,7 +451,7 @@ function KeyboardWindow({
           {formatTime(elapsed)}
         </div>
       </div>
-      <div className="mt-4 flex-1 min-h-[140px]">
+      <div className="mt-4 flex-1 min-h-[180px]">
         <p className="font-mono text-sm leading-relaxed sm:text-base">
           {text}
           {cursorActive && (
@@ -522,7 +522,7 @@ function VoiceWindow({
           {formatTime(displayedTime)}
         </div>
       </div>
-      <div className="mt-4 flex-1 min-h-[140px]">
+      <div className="mt-4 flex-1 min-h-[180px]">
         {/* Listening visualizer */}
         <AnimatePresence>
           {isListening && (
