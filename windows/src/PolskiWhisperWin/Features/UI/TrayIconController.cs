@@ -43,7 +43,8 @@ public sealed class TrayIconController : IDisposable
 
             _trayIcon = new TrayIconWithContextMenu
             {
-                Icon = iconHandle,
+                // H.NotifyIcon 2.x: Icon to nint (HICON), nie System.Drawing.Icon.
+                Icon = iconHandle.Handle,
                 ToolTip = "PolskiWhisper - dyktowanie głosowe",
                 ContextMenu = BuildContextMenu()
             };
@@ -69,7 +70,9 @@ public sealed class TrayIconController : IDisposable
 
     private PopupMenu BuildContextMenu()
     {
-        _statusMenuItem = new PopupMenuItem("Stan: Gotowy") { Enabled = false };
+        // PopupMenuItem w H.NotifyIcon 2.x wymaga onClick handler (no-arg ctor usuniety) -
+        // dla disabled item przekazujemy no-op.
+        _statusMenuItem = new PopupMenuItem("Stan: Gotowy", (_, _) => { }) { Enabled = false };
 
         _toggleMenuItem = new PopupMenuItem("Rozpocznij dyktowanie", (_, _) => OnToggleDictation());
 
