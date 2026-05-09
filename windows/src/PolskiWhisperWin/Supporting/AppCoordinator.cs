@@ -14,6 +14,7 @@ using ILogger = Microsoft.Extensions.Logging.ILogger;
 using PolskiWhisperWin.Core.Services;
 using PolskiWhisperWin.Core.Utilities;
 using PolskiWhisperWin.Features.Dictation;
+using PolskiWhisperWin.Features.UI;
 using PolskiWhisperWin.Features.Updates;
 using PolskiWhisperWin.Hotkey;
 
@@ -247,7 +248,7 @@ public sealed class AppCoordinator
         services.AddSingleton<DuplicateAppFinder>();
         services.AddSingleton<LaunchAtLoginManager>();
         services.AddSingleton<SelfUpdateInstaller>();
-        services.AddSingleton<UI.SoundService>();
+        services.AddSingleton<SoundService>();
         // v0.1.0: TrayIconController, NotificationDispatcher wyłączone w csproj
         // (zależą od UI Pages które są tymczasowo disabled).
 
