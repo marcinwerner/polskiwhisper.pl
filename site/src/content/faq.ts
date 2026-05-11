@@ -27,7 +27,7 @@ export const FAQ_ITEMS = [
   {
     question: "Czy potrzebuję GPU?",
     answer:
-      "Mac: Apple Silicon (M1/M2/M3/M4) jest wymagany - aplikacja wykorzystuje Apple Neural Engine. Windows: GPU z DirectX 12 jest opcjonalne (DirectML acceleration). Bez GPU działa, ale wolniej.",
+      "Aplikacja wymaga Apple Silicon (M1, M2, M3 lub M4) i wykorzystuje Apple Neural Engine do szybkiej transkrypcji. Intel Mac nie jest wspierany.",
   },
   {
     question: "Mogę używać w pracy?",
@@ -35,9 +35,9 @@ export const FAQ_ITEMS = [
       "Tak. Licencja MIT pozwala na użycie komercyjne, modyfikację, dystrybucję - z zachowaniem informacji o autorze i licencji.",
   },
   {
-    question: "Dlaczego nie ma w App Store ani Microsoft Store?",
+    question: "Dlaczego nie ma w App Store?",
     answer:
-      "Bo to hobby project - dystrybucja przez GitHub Releases jest tańsza i bardziej transparentna. Certyfikaty developerskie kosztują, a każdy może audytować kod bezpośrednio.",
+      "Bo to hobby project - dystrybucja przez GitHub Releases jest tańsza i bardziej transparentna. Certyfikat developerski Apple kosztuje, a każdy i tak może audytować kod bezpośrednio na GitHubie.",
   },
   {
     question: "Co jeśli znajdę problem?",

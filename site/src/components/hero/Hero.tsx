@@ -4,6 +4,7 @@ import { Apple, MonitorDot, ArrowDown } from "lucide-react";
 import { motion, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
 import { Waveform } from "./Waveform";
+import { FEATURES } from "@/lib/flags";
 
 // Direct asset URLs - GitHub counts each as a download
 const MACOS_RELEASE_URL =
@@ -60,7 +61,9 @@ export function Hero() {
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
           </span>
-          Wersja 0.1.5 dostępna - macOS i Windows
+          {FEATURES.WINDOWS_BETA_PUBLIC
+            ? "Wersja 0.1.5 dostępna - macOS i Windows"
+            : "Dostępne dla macOS Apple Silicon"}
         </motion.div>
 
         {/* Headline */}
@@ -91,7 +94,9 @@ export function Hero() {
           transition={{ duration: 0.6, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-[var(--color-fg-muted)] sm:text-xl"
         >
-          Darmowa aplikacja do dyktowania w macOS i Windows.
+          {FEATURES.WINDOWS_BETA_PUBLIC
+            ? "Darmowa aplikacja do dyktowania w macOS i Windows."
+            : "Darmowa aplikacja do dyktowania w macOS."}
           <br className="hidden sm:block" />
           Działa offline. Twoje audio nigdy nie opuszcza komputera.
         </motion.p>
@@ -114,20 +119,34 @@ export function Hero() {
             <Apple className="h-5 w-5" />
             Pobierz dla macOS
           </motion.a>
-          <motion.a
-            href={WINDOWS_RELEASE_URL}
-            download
-            whileHover={{ scale: 1.04, transition: { duration: 0.2 } }}
-            whileTap={{ scale: 0.97 }}
-            className="inline-flex h-14 w-full items-center justify-center gap-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)]/80 px-8 text-base font-semibold backdrop-blur-md transition-colors hover:border-accent/50 hover:bg-[var(--color-bg-subtle)] sm:w-auto"
-          >
-            <MonitorDot className="h-5 w-5" />
-            Pobierz dla Windows
-            <span className="ml-1 rounded-md bg-accent-subtle px-1.5 py-0.5 text-xs font-medium text-accent">
-              beta
-            </span>
-          </motion.a>
+          {FEATURES.WINDOWS_BETA_PUBLIC && (
+            <motion.a
+              href={WINDOWS_RELEASE_URL}
+              download
+              whileHover={{ scale: 1.04, transition: { duration: 0.2 } }}
+              whileTap={{ scale: 0.97 }}
+              className="inline-flex h-14 w-full items-center justify-center gap-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)]/80 px-8 text-base font-semibold backdrop-blur-md transition-colors hover:border-accent/50 hover:bg-[var(--color-bg-subtle)] sm:w-auto"
+            >
+              <MonitorDot className="h-5 w-5" />
+              Pobierz dla Windows
+              <span className="ml-1 rounded-md bg-accent-subtle px-1.5 py-0.5 text-xs font-medium text-accent">
+                beta
+              </span>
+            </motion.a>
+          )}
         </motion.div>
+
+        {!FEATURES.WINDOWS_BETA_PUBLIC && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 1.15 }}
+            className="mt-3 inline-flex items-center gap-1.5 text-xs text-[var(--color-fg-subtle)]"
+          >
+            <MonitorDot className="h-3 w-3" />
+            Wkrótce na Windows
+          </motion.p>
+        )}
 
         <motion.div
           initial={{ opacity: 0 }}

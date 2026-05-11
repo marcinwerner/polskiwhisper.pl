@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { FEATURES } from "@/lib/flags";
 
 export const alt = "PolskiWhisper - dyktowanie po polsku offline";
 export const size = { width: 1200, height: 630 };
@@ -257,7 +258,9 @@ export default function OGImage() {
           >
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ color: ACCENT, fontSize: 18, display: "flex" }}>●</span>
-              <span style={{ display: "flex" }}>macOS · Windows</span>
+              <span style={{ display: "flex" }}>
+                {FEATURES.WINDOWS_BETA_PUBLIC ? "macOS · Windows" : "macOS Apple Silicon"}
+              </span>
             </div>
             <div
               style={{

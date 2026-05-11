@@ -2,29 +2,49 @@
 
 import { motion } from "motion/react";
 import { cn } from "@/lib/cn";
+import { FEATURES } from "@/lib/flags";
 
-const MILESTONES = [
+type MilestoneStatus = "done" | "current" | "planned";
+type Milestone = {
+  version: string;
+  label: string;
+  status: MilestoneStatus;
+  windows?: boolean;
+};
+
+const ALL_MILESTONES: readonly Milestone[] = [
   {
     version: "v0.1.5",
-    label: "macOS stable",
-    status: "done" as const,
+    label: "macOS Apple Silicon - stable",
+    status: "done",
+  },
+  {
+    version: "v0.2.0",
+    label: "macOS - rozszerzenia i ustawienia",
+    status: "current",
   },
   {
     version: "v0.1.0 beta",
     label: "Windows beta - gotowa do testów",
-    status: "done" as const,
+    status: "done",
+    windows: true,
   },
   {
-    version: "v0.2.0",
+    version: "v0.3.0",
     label: "Windows pełne UI",
-    status: "current" as const,
+    status: "current",
+    windows: true,
   },
   {
     version: "v1.0.0",
-    label: "Parytet macOS ↔ Windows",
-    status: "planned" as const,
+    label: "Stabilna wersja 1.0",
+    status: "planned",
   },
 ] as const;
+
+const MILESTONES = ALL_MILESTONES.filter(
+  (m) => FEATURES.WINDOWS_BETA_PUBLIC || !m.windows
+);
 
 export function Roadmap() {
   return (

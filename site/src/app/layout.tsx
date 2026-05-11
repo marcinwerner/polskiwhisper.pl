@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { FEATURES } from "@/lib/flags";
 import "./globals.css";
+
+const PLATFORMS_TEXT = FEATURES.WINDOWS_BETA_PUBLIC
+  ? "macOS i Windows"
+  : "macOS Apple Silicon";
 
 const inter = Inter({
   subsets: ["latin", "latin-ext"],
@@ -15,8 +20,7 @@ export const metadata: Metadata = {
     default: "PolskiWhisper - dyktowanie po polsku offline",
     template: "%s | PolskiWhisper",
   },
-  description:
-    "Darmowa, otwartoźródłowa aplikacja do dyktowania głosowego po polsku. Działa offline na macOS i Windows. Zero telemetrii, kod publiczny, MIT.",
+  description: `Darmowa, otwartoźródłowa aplikacja do dyktowania głosowego po polsku. Działa offline na ${PLATFORMS_TEXT}. Zero telemetrii, kod publiczny, MIT.`,
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL ?? "https://polskiwhisper.pl"
   ),
@@ -33,8 +37,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "PolskiWhisper - dyktowanie po polsku offline",
-    description:
-      "Darmowa aplikacja do dyktowania w macOS i Windows. Mowa jest 3× szybsza niż klawiatura. Działa offline, zero telemetrii.",
+    description: `Darmowa aplikacja do dyktowania w ${PLATFORMS_TEXT}. Mowa jest 3× szybsza niż klawiatura. Działa offline, zero telemetrii.`,
     url: "https://polskiwhisper.pl",
     type: "website",
     locale: "pl_PL",
@@ -43,8 +46,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "PolskiWhisper - dyktowanie po polsku offline",
-    description:
-      "Darmowa aplikacja do dyktowania po polsku. 3× szybciej niż klawiatura. macOS · Windows · offline.",
+    description: `Darmowa aplikacja do dyktowania po polsku. 3× szybciej niż klawiatura. ${FEATURES.WINDOWS_BETA_PUBLIC ? "macOS · Windows · offline" : "macOS Apple Silicon · offline"}.`,
   },
 };
 

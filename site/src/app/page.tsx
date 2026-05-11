@@ -1,4 +1,5 @@
 import { Navbar } from "@/components/shared/Navbar";
+import { FEATURES } from "@/lib/flags";
 import { Hero } from "@/components/hero/Hero";
 import { Calculator } from "@/components/calculator/Calculator";
 import { HowItWorks } from "@/components/how-it-works/HowItWorks";
@@ -11,13 +12,18 @@ import { FAQ } from "@/components/faq/FAQ";
 import { Community } from "@/components/community/Community";
 import { Footer } from "@/components/footer/Footer";
 
+const PLATFORMS_TEXT = FEATURES.WINDOWS_BETA_PUBLIC
+  ? "macOS i Windows"
+  : "macOS Apple Silicon";
+
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   name: "PolskiWhisper",
-  description:
-    "Darmowa, otwartoźródłowa aplikacja do dyktowania głosowego po polsku. Działa offline na macOS i Windows.",
-  operatingSystem: ["macOS", "Windows"],
+  description: `Darmowa, otwartoźródłowa aplikacja do dyktowania głosowego po polsku. Działa offline na ${PLATFORMS_TEXT}.`,
+  operatingSystem: FEATURES.WINDOWS_BETA_PUBLIC
+    ? ["macOS", "Windows"]
+    : ["macOS"],
   applicationCategory: "ProductivityApplication",
   offers: {
     "@type": "Offer",

@@ -2,14 +2,16 @@
 
 import { Download, Brain, Mic } from "lucide-react";
 import { motion } from "motion/react";
+import { FEATURES } from "@/lib/flags";
 
 const STEPS = [
   {
     icon: Download,
     number: "01",
     title: "Pobierz aplikację",
-    description:
-      "Pobierz PolskiWhisper dla macOS lub Windows. Instalacja zajmuje chwilę.",
+    description: FEATURES.WINDOWS_BETA_PUBLIC
+      ? "Pobierz PolskiWhisper dla macOS lub Windows. Instalacja zajmuje chwilę."
+      : "Pobierz PolskiWhisper dla macOS Apple Silicon. Instalacja zajmuje chwilę.",
   },
   {
     icon: Brain,

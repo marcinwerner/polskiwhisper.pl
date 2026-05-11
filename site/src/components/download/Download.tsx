@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Apple, MonitorDot, Download as DownloadIcon, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/cn";
+import { FEATURES } from "@/lib/flags";
 
 type Platform = "macos" | "windows";
 
@@ -19,7 +20,7 @@ const PLATFORMS = {
     downloadLabel: "Pobierz .dmg (6 MB)",
     requirements: [
       "macOS 14 Sonoma lub nowszy",
-      "Apple Silicon (M1/M2/M3/M4)",
+      "Apple Silicon (M1/M2/M3/M4) - Intel nie jest wspierany",
       "~2 GB wolnego miejsca",
       "Mikrofon",
     ],
@@ -70,37 +71,39 @@ export function Download() {
           </p>
         </div>
 
-        {/* Platform tabs */}
-        <div className="mt-10 flex items-center justify-center gap-2 rounded-xl bg-[var(--color-bg)] p-1.5">
-          {(["macos", "windows"] as const).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPlatform(p)}
-              className={cn(
-                "relative flex-1 rounded-lg px-6 py-3 text-sm font-medium transition-colors",
-                platform === p
-                  ? "text-[var(--color-fg)]"
-                  : "text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]"
-              )}
-            >
-              {platform === p && (
-                <motion.div
-                  layoutId="download-tab"
-                  className="absolute inset-0 rounded-lg bg-[var(--color-bg-elevated)] border border-[var(--color-border-subtle)]"
-                  transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
-                />
-              )}
-              <span className="relative flex items-center justify-center gap-2">
-                {p === "macos" ? (
-                  <Apple className="h-4 w-4" />
-                ) : (
-                  <MonitorDot className="h-4 w-4" />
+        {/* Platform tabs - hidden until Windows beta is public */}
+        {FEATURES.WINDOWS_BETA_PUBLIC && (
+          <div className="mt-10 flex items-center justify-center gap-2 rounded-xl bg-[var(--color-bg)] p-1.5">
+            {(["macos", "windows"] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPlatform(p)}
+                className={cn(
+                  "relative flex-1 rounded-lg px-6 py-3 text-sm font-medium transition-colors",
+                  platform === p
+                    ? "text-[var(--color-fg)]"
+                    : "text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]"
                 )}
-                {PLATFORMS[p].label}
-              </span>
-            </button>
-          ))}
-        </div>
+              >
+                {platform === p && (
+                  <motion.div
+                    layoutId="download-tab"
+                    className="absolute inset-0 rounded-lg bg-[var(--color-bg-elevated)] border border-[var(--color-border-subtle)]"
+                    transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
+                  />
+                )}
+                <span className="relative flex items-center justify-center gap-2">
+                  {p === "macos" ? (
+                    <Apple className="h-4 w-4" />
+                  ) : (
+                    <MonitorDot className="h-4 w-4" />
+                  )}
+                  {PLATFORMS[p].label}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Platform content */}
         <AnimatePresence mode="wait">
@@ -168,6 +171,13 @@ export function Download() {
             </div>
           </motion.div>
         </AnimatePresence>
+
+        {!FEATURES.WINDOWS_BETA_PUBLIC && (
+          <p className="mt-6 flex items-center justify-center gap-2 text-sm text-[var(--color-fg-subtle)]">
+            <MonitorDot className="h-4 w-4" />
+            Wersja na Windows w przygotowaniu - wkrótce dostępna do testów.
+          </p>
+        )}
       </div>
     </section>
   );
