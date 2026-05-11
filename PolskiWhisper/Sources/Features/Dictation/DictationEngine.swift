@@ -249,17 +249,27 @@ final class DictationEngine {
 
         // Pipeline:
         // 1. Whisper transcribe (z initialPrompt z Custom Words)
-        // 2. VocabularyProcessor.applyFindReplace
+        // 2. VocabularyProcessor.applyFindReplace (off main thread - CPU-bound)
         // 3. PasteService.paste
+        //
+        // **Profilowanie**: każdy krok ma Log.dictation.info ze znacznikiem
+        // `pipeline-stepN` żeby zdiagnozować gdzie wisi (znaleziony 2026-05-11
+        // 39s gap między Whisper complete a paste w sesji 15:15:59).
         do {
             // 1. Whisper z Custom Words injection
+            let pipelineStartedAt = Date()
+            Log.dictation.info("pipeline-step1: generating initialPrompt")
             let initialPrompt = VocabularyProcessor.generateInitialPrompt()
+            Log.dictation.info("pipeline-step1: calling Whisper.transcribe (prompt=\(initialPrompt?.count ?? 0, privacy: .public) chars)")
             let rawTranscript = try await whisperService.transcribe(
                 audioFileURL: url,
                 initialPrompt: initialPrompt
             )
+            let afterWhisperAt = Date()
+            Log.dictation.info("pipeline-step1-done: Whisper returned \(rawTranscript.count, privacy: .public) chars in \(afterWhisperAt.timeIntervalSince(pipelineStartedAt), privacy: .public)s")
 
             longTask?.cancel()  // j2: Whisper się skończył - anuluj long-watcher (jeszcze nie odpalił)
+            Log.dictation.info("pipeline-step2: long-watcher cancelled, checking empty")
 
             guard !rawTranscript.isEmpty else {
                 Log.dictation.warning("Empty transcription - skipping paste")
@@ -272,12 +282,19 @@ final class DictationEngine {
 
             Log.dictation.info("Whisper raw: \(rawTranscript.count, privacy: .public) chars")
 
-            // 2. Find & Replace
+            // 2. Find & Replace - profilowane.
+            // 12 reguł literal replace na 119 chars typowo <1ms.
+            // VocabularyProcessor jest @MainActor (używa @MainActor VocabularyStore),
+            // więc zostaje na main thread. Logi pokażą czy to wąskie gardło.
+            Log.dictation.info("pipeline-step3: applyFindReplace")
+            let fnrStartedAt = Date()
             var processedText = VocabularyProcessor.applyFindReplace(rawTranscript)
+            Log.dictation.info("pipeline-step3-done: F&R returned \(processedText.count, privacy: .public) chars in \(Date().timeIntervalSince(fnrStartedAt), privacy: .public)s")
 
             // 2.5. Auto-spacing: gdy user nagrywa na raty (zdanie kończące się .!?
             // potem druga transkrypcja), prepend " " żeby uniknąć "zdanie.Drugie".
             // Window 60s = continuation, dłużej = user pewnie zmienił focus.
+            Log.dictation.info("pipeline-step4: auto-spacing check")
             if let lastTime = lastPasteAt,
                Date().timeIntervalSince(lastTime) < Self.continuationWindow,
                lastPasteEndedWithTerminator,
@@ -288,10 +305,14 @@ final class DictationEngine {
             }
 
             // 3. Paste
+            Log.dictation.info("pipeline-step5: setting phase=.pasting")
             AppCoordinator.shared.phase = .pasting
 
+            Log.dictation.info("pipeline-step6: calling pasteService.paste")
+            let pasteStartedAt = Date()
             do {
                 try pasteService.paste(processedText)
+                Log.dictation.info("pipeline-step6-done: paste success in \(Date().timeIntervalSince(pasteStartedAt), privacy: .public)s")
                 AppCoordinator.shared.phase = .completed(transcriptLength: processedText.count)
                 SoundService.playFinish()
             } catch let pasteError as PasteService.PasteError {
@@ -313,6 +334,7 @@ final class DictationEngine {
             // Cleanup tylko po success paste (lub clipboard fallback)
             audioRecorder.cleanupRecording(at: url)
 
+            Log.dictation.info("pipeline-complete: total=\(Date().timeIntervalSince(pipelineStartedAt), privacy: .public)s, whisper=\(afterWhisperAt.timeIntervalSince(pipelineStartedAt), privacy: .public)s, post-whisper=\(Date().timeIntervalSince(afterWhisperAt), privacy: .public)s")
             await dismissFloatingWindow(after: 0.8)
 
         } catch {
