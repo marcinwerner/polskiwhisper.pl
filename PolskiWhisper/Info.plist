@@ -41,5 +41,11 @@ Wydane na licencji MIT.</string>
 	<false/>
 	<key>NSHighResolutionCapable</key>
 	<true/>
+	<!-- Disable App Nap - aplikacja w tle nie powinna być throttlowana, bo
+	     model Whisper Turbo (1.5 GB) musi pozostać "hot" w RAM. Bez tego
+	     macOS może evictować strony modelu do swap przy memory pressure
+	     (zaobserwowane 2026-05-11: page-in z disk = 488s "transcription"). -->
+	<key>NSAppSleepDisabled</key>
+	<true/>
 </dict>
 </plist>

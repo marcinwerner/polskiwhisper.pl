@@ -122,6 +122,15 @@ final class WhisperService {
 
     private var whisperKit: WhisperKit?
 
+    /// Background timer który okresowo "puka" pages modelu w RAM żeby macOS
+    /// nie evictował ich do swap pod memory pressure (zaobserwowane 488s "transcription"
+    /// gdzie sam Whisper był 2.4s a reszta to page-in z disk).
+    private var memoryWarmingTimer: DispatchSourceTimer?
+
+    /// Co ile sekund robić memory warming pass. 30s = balans między
+    /// "trzymaj model hot" a "nie obciążaj systemu nadmiernie".
+    private static let memoryWarmingIntervalSeconds: Int = 30
+
     // MARK: - Public API
 
     /// Ładuje model. Jeśli nie pobrany - pobiera z progress tracking.
@@ -200,6 +209,10 @@ final class WhisperService {
             loadPhase = .ready
 
             Log.whisper.info("Model loaded successfully: \(model.rawValue, privacy: .public)")
+
+            // c1+c2+c3 fix dla memory pressure: po load, rozpocznij memory warming.
+            // madvise(WILLNEED) + okresowe page-touching trzyma model "hot" w RAM.
+            startMemoryWarming(for: model)
         } catch {
             whisperKit = nil
             loadedModel = nil
@@ -512,5 +525,121 @@ final class WhisperService {
             total += Int64(values?.totalFileAllocatedSize ?? 0)
         }
         return total
+    }
+
+    // MARK: - Memory warming (anti memory-pressure)
+    //
+    // Problem: zaobserwowane 2026-05-12 - na M1 16GB pod memory pressure,
+    // strony modelu Whisper Turbo (1.5 GB) były evictowane do swap. Gdy user
+    // wciska hotkey, WhisperKit musi page-in 1.5 GB z disk = 8 minut "wisi"
+    // mimo że sam decoding to 2-3 sek.
+    //
+    // Rozwiązanie: po load modelu, mmap pliki + madvise(WILLNEED) + okresowe
+    // touchowanie pages żeby macOS trzymał je w "active" zamiast "inactive".
+    // To NIE jest mlock (wymagałby Apple entitlements) - tylko soft hint +
+    // ciągłe sygnalizowanie "te strony są w użyciu, nie evictuj".
+
+    /// Rozpoczyna memory warming dla modelu. Anuluje poprzedni timer jeśli istnieje.
+    private func startMemoryWarming(for model: Model) {
+        memoryWarmingTimer?.cancel()
+        memoryWarmingTimer = nil
+
+        guard let folderURL = Self.modelDirectoryURL(for: model) else {
+            Log.whisper.warning("Memory warming: brak folderURL dla \(model.rawValue, privacy: .public)")
+            return
+        }
+
+        // Initial pre-warm + madvise hint - sygnał do macOS że strony będą potrzebne.
+        Self.applyMemoryHints(folderURL: folderURL, initial: true)
+
+        // Periodic page-touching co 30s żeby strony nie zostały oznaczone jako inactive.
+        let timer = DispatchSource.makeTimerSource(
+            queue: DispatchQueue.global(qos: .background)
+        )
+        timer.schedule(
+            deadline: .now() + .seconds(Self.memoryWarmingIntervalSeconds),
+            repeating: .seconds(Self.memoryWarmingIntervalSeconds)
+        )
+        timer.setEventHandler { [folderURL] in
+            Self.applyMemoryHints(folderURL: folderURL, initial: false)
+        }
+        timer.resume()
+        memoryWarmingTimer = timer
+
+        Log.whisper.info("""
+            Memory warming aktywne dla \(model.rawValue, privacy: .public) - \
+            tick co \(Self.memoryWarmingIntervalSeconds, privacy: .public)s
+            """)
+    }
+
+    /// Iteruje pliki w folderze modelu, mmap + madvise(WILLNEED) + touch each page.
+    /// `initial=true` loguje rezultaty; w periodic ticks loguje tylko jeśli >100ms (anomalia).
+    private static func applyMemoryHints(folderURL: URL, initial: Bool) {
+        let start = Date()
+        let fm = FileManager.default
+
+        guard let enumerator = fm.enumerator(
+            at: folderURL,
+            includingPropertiesForKeys: [.fileSizeKey, .isRegularFileKey],
+            options: [.skipsHiddenFiles]
+        ) else {
+            return
+        }
+
+        var totalBytes: Int64 = 0
+        var filesTouched: Int = 0
+
+        for case let fileURL as URL in enumerator {
+            // Tylko regular files (nie symlinks/directories)
+            guard let isFile = try? fileURL.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile,
+                  isFile,
+                  let size = try? fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+                  size > 0
+            else {
+                continue
+            }
+
+            // Tylko pliki które realnie składają się na model - skip metadata/json (<1KB).
+            // Skupiamy się na .mlmodelc weights które są duże.
+            guard size > 1024 else { continue }
+
+            let fd = open(fileURL.path, O_RDONLY)
+            guard fd >= 0 else { continue }
+            defer { close(fd) }
+
+            guard let ptr = mmap(nil, size, PROT_READ, MAP_PRIVATE, fd, 0),
+                  ptr != UnsafeMutableRawPointer(bitPattern: -1)
+            else {
+                continue
+            }
+            defer { munmap(ptr, size) }
+
+            // madvise WILLNEED: hint do kernela żeby pre-fetch te strony do RAM
+            // i traktował je jako "soon to be accessed".
+            madvise(ptr, size, MADV_WILLNEED)
+
+            // Touchowanie pierwszego byte każdej strony (16 KB na Apple Silicon)
+            // żeby zwiększyć ich "active" reference count - macOS nie evictuje active pages first.
+            let pageSize = 16384
+            let typedPtr = ptr.assumingMemoryBound(to: UInt8.self)
+            var offset = 0
+            while offset < size {
+                _ = typedPtr[offset]  // read = touch
+                offset += pageSize
+            }
+
+            totalBytes += Int64(size)
+            filesTouched += 1
+        }
+
+        let elapsed = Date().timeIntervalSince(start)
+        if initial || elapsed > 0.1 {
+            // Initial pass loguje zawsze; periodic loguje tylko jeśli wolne (anomalia = swap I/O)
+            Log.whisper.info("""
+                Memory warming \(initial ? "INIT" : "TICK", privacy: .public): \
+                touched \(filesTouched, privacy: .public) files / \
+                \(totalBytes / 1_000_000, privacy: .public) MB in \(elapsed, privacy: .public)s
+                """)
+        }
     }
 }
