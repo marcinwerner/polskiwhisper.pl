@@ -17,33 +17,50 @@ import { cn } from "@/lib/cn";
 
 // Per-case typing speed multiplier. Programista i pisarz - szybcy (touch typing).
 // Researcher - medium. Casual - wolniej.
+// Każda kategoria ma tablicę tekstów - rotują przy kolejnych wyświetleniach w sesji.
 const CASES = [
   {
     icon: Code2,
     title: "Programista",
     scenario: "Komentarz w kodzie, prompt do AI, opis pull requesta.",
-    text: "TODO naprawić ten endpoint żeby zwracał prawidłowe dane dla użytkowników z polskimi znakami w imieniu",
+    texts: [
+      "TODO naprawić ten endpoint żeby zwracał prawidłowe dane dla użytkowników z polskimi znakami w imieniu",
+      "TODO refactor tego komponentu na server actions zamiast useEffect bo na mobile ładuje się wieki i userzy uciekają",
+      "TODO dorzucić middleware rate limiting bo bots zalewają endpoint i wczoraj API padło na trzy godziny w nocy",
+      "TODO przepisać ten cron job na queue bo jak fail to nie ma retry i admin musi co rano sprawdzać manualnie",
+    ],
     keyboardSpeed: 0.52, // pro touch typist - additional 20% faster
   },
   {
     icon: PenTool,
     title: "Pisarz",
     scenario: "Szkic artykułu, odpowiedź na maile, post na blog.",
-    text: "Trzeba napisać artykuł o nowych trendach w technologii, które zmieniają sposób w jaki pracujemy.",
+    texts: [
+      "Trzeba napisać artykuł o nowych trendach w technologii, które zmieniają sposób w jaki pracujemy.",
+      "Czytałem dziś o stoickiej filozofii - Marek Aureliusz pisał, że szczęście zależy od jakości myśli.",
+      "Książka o produktywności mówi, że godzina deep work warta jest cztery godziny rozproszonej pracy.",
+    ],
     keyboardSpeed: 0.65, // doświadczony piszący - additional 10% faster
   },
   {
     icon: BookOpen,
     title: "Researcher",
     scenario: "Notatki z PDFa, cytowanie źródeł, streszczenie artykułu.",
-    text: "Średnia osoba pisze 40 słów na minutę, mówi 140. Stenografistki sądowe biją rekord przy 360 słów na minutę.",
+    texts: [
+      "Średnia osoba pisze 40 słów na minutę, mówi 150. Steve Woodmore wypowiedział 637 słów na minutę - rekord Guinnessa z 1990.",
+      "Rekord pisania na klawiaturze - Barbara Blackburn, 216 słów na minutę. Średnia rozmowa to 150 słów, więc nawet rekordzistka tylko dogania mowę.",
+      "Stenografistka sądowa osiąga 360 słów na minutę na specjalnej klawiaturze. Mowa potoczna - 150. Dyktowanie głosem zostawia każdą klawiaturę w tyle.",
+    ],
     keyboardSpeed: 0.95, // skupiony, ale dokładny
   },
   {
     icon: MessageSquare,
     title: "Każdy",
     scenario: "Slack, Discord, komentarze, wiadomości.",
-    text: "Słuchaj, rozważam zmianę pracy. Ten projekt wykańcza mnie psychicznie. Co o tym myślisz?",
+    texts: [
+      "Pisanie głosem to nawyk - pierwszy tydzień dziwnie, drugi już automatyczny, trzeci zastanawiasz się jak żyłeś bez tego.",
+      "Czytałem że ludzie używający AI codziennie pracują krócej i robią więcej. Może warto?",
+    ],
     keyboardSpeed: 1.05, // casual, czasem hunt-and-peck
   },
 ] as const;
@@ -117,6 +134,16 @@ type Phase =
 
 export function UseCases() {
   const [current, setCurrent] = useState(0);
+  // visitCount[i] = ile razy case `i` zostało aktywowane. Tekst do pokazania = texts[(visit-1) % texts.length].
+  // Case 0 startuje z 1 (initial mount), reszta z 0.
+  const [visitCount, setVisitCount] = useState<Record<number, number>>(() => {
+    const init: Record<number, number> = {};
+    CASES.forEach((_, i) => {
+      init[i] = 0;
+    });
+    init[0] = 1;
+    return init;
+  });
   const [isPaused, setIsPaused] = useState(false);
   const [phase, setPhase] = useState<Phase>("idle");
   const [keyboardText, setKeyboardText] = useState("");
@@ -135,20 +162,37 @@ export function UseCases() {
   const charTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const phaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const visualizerRafRef = useRef<number>(0);
+  // Ref synchronicznie trackuje ostatni cel advanceTo - dedup rapid clicks (np. dwa kliknięcia tabu zanim render się zakończy).
+  const lastAdvancedRef = useRef(0);
+
+  const advanceTo = useCallback((nextIndex: number) => {
+    if (lastAdvancedRef.current === nextIndex) return; // no-op gdy ta sama kategoria
+    lastAdvancedRef.current = nextIndex;
+    setVisitCount((vc) => ({
+      ...vc,
+      [nextIndex]: (vc[nextIndex] ?? 0) + 1,
+    }));
+    setCurrent(nextIndex);
+  }, []);
 
   const next = useCallback(() => {
-    setCurrent((c) => (c + 1) % CASES.length);
-  }, []);
+    advanceTo((lastAdvancedRef.current + 1) % CASES.length);
+  }, [advanceTo]);
 
   const prev = useCallback(() => {
-    setCurrent((c) => (c - 1 + CASES.length) % CASES.length);
-  }, []);
+    advanceTo((lastAdvancedRef.current - 1 + CASES.length) % CASES.length);
+  }, [advanceTo]);
 
   // Single scene effect - all timers scheduled together, cleanup on case change
   useEffect(() => {
     const item = CASES[current];
+    // Wybierz tekst na podstawie liczby odwiedzin tej kategorii w tej sesji.
+    // visitNum=1 → texts[0], =2 → texts[1], wraps around tablicy.
+    const visitNum = visitCount[current] ?? 1;
+    const textIdx = (visitNum - 1) % item.texts.length;
+    const text = item.texts[textIdx];
     const { voiceSpeakingMs, voiceTotalMs, keyboardTotalMs, baseCharDelayMs } =
-      pickTimings(item.text, item.keyboardSpeed);
+      pickTimings(text, item.keyboardSpeed);
 
     // Reset all state for new case
     setKeyboardText("");
@@ -165,7 +209,7 @@ export function UseCases() {
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     if (reducedMotion) {
-      setKeyboardText(item.text);
+      setKeyboardText(text);
       setVoiceShown(true);
       voiceFinalTimeRef.current = voiceTotalMs / 1000;
       keyboardFinalTimeRef.current = keyboardTotalMs / 1000;
@@ -254,8 +298,8 @@ export function UseCases() {
         let typosLeftCount = 0;
         const maxLeftTypos = 1;
 
-        for (let i = 0; i < item.text.length; i++) {
-          const ch = item.text[i];
+        for (let i = 0; i < text.length; i++) {
+          const ch = text[i];
           const isWordBoundary = ch === " " || ch === "," || ch === "." || ch === "-";
 
           // Per-char delay with broader jitter
@@ -264,7 +308,7 @@ export function UseCases() {
 
           // Occasional thinking pauses (some short, rare longer "real" thinking)
           charsUntilPause--;
-          if (charsUntilPause <= 0 && i > 3 && i < item.text.length - 3) {
+          if (charsUntilPause <= 0 && i > 3 && i < text.length - 3) {
             if (Math.random() < LONG_PAUSE_PROBABILITY) {
               delay += randFloat(LONG_PAUSE_DURATION_MIN, LONG_PAUSE_DURATION_MAX);
             } else {
@@ -278,7 +322,7 @@ export function UseCases() {
             !isWordBoundary &&
             wordChars === 0 &&
             i > 1 &&
-            i < item.text.length - 5 &&
+            i < text.length - 5 &&
             Math.random() < TYPO_PROBABILITY
           ) {
             const wrong = pickTypo(ch);
@@ -372,7 +416,7 @@ export function UseCases() {
       cancelAnimationFrame(tickRafRef.current);
       cancelAnimationFrame(visualizerRafRef.current);
     };
-  }, [current]);
+  }, [current, visitCount]);
 
   // Auto-advance after all-done
   useEffect(() => {
@@ -385,6 +429,10 @@ export function UseCases() {
   }, [phase, isPaused, next]);
 
   const item = CASES[current];
+  // Tekst aktualnie wyświetlany - z tablicy texts wg liczby odwiedzin tej kategorii.
+  const currentVisitNum = visitCount[current] ?? 1;
+  const currentTextIdx = (currentVisitNum - 1) % item.texts.length;
+  const currentText = item.texts[currentTextIdx];
   const hotkeyPressed = phase === "running";
   const voiceReleasing = phase === "voice-released";
   const isComplete = phase === "all-done";
@@ -429,7 +477,7 @@ export function UseCases() {
             {CASES.map((c, i) => (
               <button
                 key={c.title}
-                onClick={() => setCurrent(i)}
+                onClick={() => advanceTo(i)}
                 className={cn(
                   "flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-all sm:px-4",
                   i === current
@@ -482,7 +530,7 @@ export function UseCases() {
               {/* Keyboard window */}
               <KeyboardWindow
                 text={keyboardText}
-                fullText={item.text}
+                fullText={currentText}
                 elapsed={keyboardElapsed}
                 isComplete={isComplete}
                 started={phase !== "idle"}
@@ -497,7 +545,7 @@ export function UseCases() {
 
               {/* Whisper window */}
               <VoiceWindow
-                text={item.text}
+                text={currentText}
                 shown={voiceShown}
                 elapsed={voiceElapsed}
                 voiceFinal={voiceFinalTimeRef.current}
@@ -538,7 +586,7 @@ export function UseCases() {
             {CASES.map((_, i) => (
               <button
                 key={i}
-                onClick={() => setCurrent(i)}
+                onClick={() => advanceTo(i)}
                 className={cn(
                   "h-2 rounded-full transition-all",
                   i === current
