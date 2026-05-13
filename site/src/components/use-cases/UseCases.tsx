@@ -15,9 +15,15 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/cn";
 
-// Per-case typing speed multiplier. Programista i pisarz - szybcy (touch typing).
-// Researcher - medium. Casual - wolniej.
-// Każda kategoria ma tablicę tekstów - rotują przy kolejnych wyświetleniach w sesji.
+// Per-case typing profile. Każda postać ma własną prędkość + płynność.
+// Prędkość = keyboardSpeed (niższe = szybciej). Płynność = jitter range +
+// pause frequency/duration + typo rate. Profile dobrane do charakteru postaci.
+//
+// Target % per case (Marcin's spec):
+//   Programista: prędkość 90% / płynność 95% - touch typing pro
+//   Pisarz:      prędkość 75% / płynność 70% - doświadczony piszący
+//   Researcher:  prędkość 65% / płynność 65% - skupiony, ale dokładny
+//   Każdy:       prędkość 55% / płynność 65% - casual hunt-and-peck
 const CASES = [
   {
     icon: Code2,
@@ -29,7 +35,19 @@ const CASES = [
       "TODO dorzucić middleware rate limiting bo bots zalewają endpoint i wczoraj API padło na trzy godziny w nocy",
       "TODO przepisać ten cron job na queue bo jak fail to nie ma retry i admin musi co rano sprawdzać manualnie",
     ],
-    keyboardSpeed: 0.52, // pro touch typist - additional 20% faster
+    // 90% / 95% - prawie deterministyczne pisanie pro
+    keyboardSpeed: 0.42,
+    jitterMin: 0.85,
+    jitterMax: 1.15,
+    pauseEveryMin: 30,
+    pauseEveryMax: 50,
+    pauseDurationMin: 60,
+    pauseDurationMax: 180,
+    longPauseProbability: 0.02,
+    longPauseDurationMin: 400,
+    longPauseDurationMax: 700,
+    typoProbability: 0.03,
+    typoLeaveUncorrectedRatio: 0.10,
   },
   {
     icon: PenTool,
@@ -40,7 +58,19 @@ const CASES = [
       "Czytałem dziś o stoickiej filozofii - Marek Aureliusz pisał, że szczęście zależy od jakości myśli.",
       "Książka o produktywności mówi, że godzina deep work warta jest cztery godziny rozproszonej pracy.",
     ],
-    keyboardSpeed: 0.65, // doświadczony piszący - additional 10% faster
+    // 75% / 70% - płynnie z momentami zastanowienia
+    keyboardSpeed: 0.60,
+    jitterMin: 0.60,
+    jitterMax: 1.40,
+    pauseEveryMin: 18,
+    pauseEveryMax: 30,
+    pauseDurationMin: 100,
+    pauseDurationMax: 300,
+    longPauseProbability: 0.06,
+    longPauseDurationMin: 500,
+    longPauseDurationMax: 1000,
+    typoProbability: 0.08,
+    typoLeaveUncorrectedRatio: 0.20,
   },
   {
     icon: BookOpen,
@@ -51,7 +81,19 @@ const CASES = [
       "Rekord pisania na klawiaturze - Barbara Blackburn, 216 słów na minutę. Średnia rozmowa to 150 słów, więc nawet rekordzistka tylko dogania mowę.",
       "Stenografistka sądowa osiąga 360 słów na minutę na specjalnej klawiaturze. Mowa potoczna - 150. Dyktowanie głosem zostawia każdą klawiaturę w tyle.",
     ],
-    keyboardSpeed: 0.95, // skupiony, ale dokładny
+    // 65% / 65% - skupiony charakter, umiarkowane pauzy myślowe
+    keyboardSpeed: 0.72,
+    jitterMin: 0.55,
+    jitterMax: 1.50,
+    pauseEveryMin: 15,
+    pauseEveryMax: 25,
+    pauseDurationMin: 120,
+    pauseDurationMax: 380,
+    longPauseProbability: 0.08,
+    longPauseDurationMin: 600,
+    longPauseDurationMax: 1100,
+    typoProbability: 0.10,
+    typoLeaveUncorrectedRatio: 0.25,
   },
   {
     icon: MessageSquare,
@@ -61,7 +103,19 @@ const CASES = [
       "Pisanie głosem to nawyk - pierwszy tydzień dziwnie, drugi już automatyczny, trzeci zastanawiasz się jak żyłeś bez tego.",
       "Czytałem że ludzie używający AI codziennie pracują krócej i robią więcej. Może warto?",
     ],
-    keyboardSpeed: 1.05, // casual, czasem hunt-and-peck
+    // 55% / 65% - casual; różny charakter od Researchera widać przez wolniejszą prędkość
+    keyboardSpeed: 0.84,
+    jitterMin: 0.55,
+    jitterMax: 1.50,
+    pauseEveryMin: 15,
+    pauseEveryMax: 25,
+    pauseDurationMin: 120,
+    pauseDurationMax: 380,
+    longPauseProbability: 0.08,
+    longPauseDurationMin: 600,
+    longPauseDurationMax: 1100,
+    typoProbability: 0.10,
+    typoLeaveUncorrectedRatio: 0.25,
   },
 ] as const;
 
@@ -73,20 +127,7 @@ const KEYBOARD_SPEED_RATIO = 3; // Stanford 2016: speech is 3x faster
 const KEYBOARD_GLOBAL_SPEEDUP = 0.8; // additional 20% faster on keyboard
 const POST_FINISH_HOLD = 2800; // ms to hold final state before next case
 
-// Natural typing variability - more dramatic now
-const KEYBOARD_JITTER_MIN = 0.45;
-const KEYBOARD_JITTER_MAX = 1.85;
-const PAUSE_EVERY_MIN_CHARS = 7;
-const PAUSE_EVERY_MAX_CHARS = 22;
-const PAUSE_DURATION_MIN = 140;
-const PAUSE_DURATION_MAX = 520;
-// Occasional longer "thinking" pauses
-const LONG_PAUSE_PROBABILITY = 0.12;
-const LONG_PAUSE_DURATION_MIN = 700;
-const LONG_PAUSE_DURATION_MAX = 1400;
-// Typos - higher rate now, sometimes left uncorrected (lazy)
-const TYPO_PROBABILITY = 0.14;
-const TYPO_LEAVE_UNCORRECTED_RATIO = 0.35; // 35% of typos NOT fixed (stays as typo)
+// Typo backspace delay - mechanika identyczna dla wszystkich postaci
 const TYPO_BACKSPACE_DELAY = [60, 140] as const; // ms
 
 function pickTimings(text: string, kbSpeed: number) {
@@ -297,7 +338,7 @@ export function UseCases() {
           | { type: "backspace"; delay: number };
 
         const actions: Action[] = [];
-        let charsUntilPause = randInt(PAUSE_EVERY_MIN_CHARS, PAUSE_EVERY_MAX_CHARS);
+        let charsUntilPause = randInt(item.pauseEveryMin, item.pauseEveryMax);
         let wordChars = 0;
         let typosLeftCount = 0;
         const maxLeftTypos = 1;
@@ -306,19 +347,19 @@ export function UseCases() {
           const ch = text[i];
           const isWordBoundary = ch === " " || ch === "," || ch === "." || ch === "-";
 
-          // Per-char delay with broader jitter
-          const jitter = randFloat(KEYBOARD_JITTER_MIN, KEYBOARD_JITTER_MAX);
+          // Per-char delay with per-case jitter (wąski = pro typist, szeroki = casual)
+          const jitter = randFloat(item.jitterMin, item.jitterMax);
           let delay = baseCharDelayMs * jitter;
 
           // Occasional thinking pauses (some short, rare longer "real" thinking)
           charsUntilPause--;
           if (charsUntilPause <= 0 && i > 3 && i < text.length - 3) {
-            if (Math.random() < LONG_PAUSE_PROBABILITY) {
-              delay += randFloat(LONG_PAUSE_DURATION_MIN, LONG_PAUSE_DURATION_MAX);
+            if (Math.random() < item.longPauseProbability) {
+              delay += randFloat(item.longPauseDurationMin, item.longPauseDurationMax);
             } else {
-              delay += randFloat(PAUSE_DURATION_MIN, PAUSE_DURATION_MAX);
+              delay += randFloat(item.pauseDurationMin, item.pauseDurationMax);
             }
-            charsUntilPause = randInt(PAUSE_EVERY_MIN_CHARS, PAUSE_EVERY_MAX_CHARS);
+            charsUntilPause = randInt(item.pauseEveryMin, item.pauseEveryMax);
           }
 
           // Maybe inject a typo at start of a word
@@ -327,13 +368,13 @@ export function UseCases() {
             wordChars === 0 &&
             i > 1 &&
             i < text.length - 5 &&
-            Math.random() < TYPO_PROBABILITY
+            Math.random() < item.typoProbability
           ) {
             const wrong = pickTypo(ch);
             if (wrong && wrong !== ch) {
               const leaveIt =
                 typosLeftCount < maxLeftTypos &&
-                Math.random() < TYPO_LEAVE_UNCORRECTED_RATIO;
+                Math.random() < item.typoLeaveUncorrectedRatio;
 
               if (leaveIt) {
                 // Type wrong char, leave it (no backspace, just advance to next)
