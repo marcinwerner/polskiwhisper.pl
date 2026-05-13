@@ -117,7 +117,7 @@ export function Calculator() {
               whileTap={{ scale: 0.97 }}
               className="inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-[var(--color-accent-fg)] shadow-[var(--shadow-glow)] transition-shadow hover:shadow-[0_0_48px_oklch(0.55_0.22_18/0.4)]"
             >
-              Pobierz teraz, oszczędzaj jutro
+              Pobierz teraz i oszczędzaj czas
             </motion.a>
           </div>
 
