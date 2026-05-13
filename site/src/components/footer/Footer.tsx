@@ -10,10 +10,10 @@ function GithubIcon({ className }: { className?: string }) {
 
 const LINKS = {
   produkt: [
-    { label: "Pobierz", href: "#download" },
-    { label: "Jak to działa", href: "#how-it-works" },
-    { label: "FAQ", href: "#faq" },
-    { label: "Roadmapa", href: "#roadmap" },
+    { label: "Pobierz", href: "/#download" },
+    { label: "Jak to działa", href: "/#how-it-works" },
+    { label: "FAQ", href: "/#faq" },
+    { label: "Roadmapa", href: "/#roadmap" },
   ],
   spolecznosc: [
     {

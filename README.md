@@ -34,7 +34,7 @@ PolskiWhisper to **darmowe, lokalne narzędzie do promptowania głosowego dla ma
 | | |
 |---|---|
 | **macOS** | 14 Sonoma lub nowszy |
-| **Procesor** | Apple Silicon (M1/M2/M3/M4) - Intel nie wspierany |
+| **Procesor** | Apple Silicon (M1/M2/M3/M4/M5) - na Intel Mac aplikacja jeszcze nie działa |
 | **RAM** | 8 GB |
 | **Dysk** | ~1.5 GB na domyślny model Whisper (do 3 GB jeśli wybierzesz Large v3) |
 | **Mikrofon** | wbudowany lub zewnętrzny |

@@ -16,7 +16,7 @@ const STEPS = [
   {
     icon: Brain,
     number: "02",
-    title: "Pobierz model Whisper",
+    title: "Zainstaluj",
     description:
       "Jednorazowe pobranie modelu (~1.5 GB). Po tym - pełny offline. Żadnych kont, subskrypcji ani chmury.",
   },

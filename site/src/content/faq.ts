@@ -2,7 +2,7 @@ export const FAQ_ITEMS = [
   {
     question: "Czy to naprawdę darmowe?",
     answer:
-      "Tak, na zawsze. Aplikacja jest open-source na licencji MIT. Możesz pobrać, używać, modyfikować, dystrybuować - bez kosztów, bez rejestracji, bez konta.",
+      "Tak. Aplikacja jest open-source na licencji MIT. Możesz pobrać, używać, modyfikować, dystrybuować - bez kosztów, bez rejestracji, bez konta.",
   },
   {
     question: "Co z prywatnością?",
@@ -27,7 +27,7 @@ export const FAQ_ITEMS = [
   {
     question: "Czy potrzebuję GPU?",
     answer:
-      "Aplikacja wymaga Apple Silicon (M1, M2, M3 lub M4) i wykorzystuje Apple Neural Engine do szybkiej transkrypcji. Intel Mac nie jest wspierany.",
+      "Aplikacja wymaga Apple Silicon (M1, M2, M3, M4 lub M5) i wykorzystuje Apple Neural Engine do szybkiej transkrypcji. Na Intel Mac aplikacja jeszcze nie działa.",
   },
   {
     question: "Mogę używać w pracy?",
@@ -42,6 +42,6 @@ export const FAQ_ITEMS = [
   {
     question: "Co jeśli znajdę problem?",
     answer:
-      "Otwórz issue na GitHub. Możesz pisać po polsku. Staramy się odpowiadać szybko.",
+      'Otwórz issue na github.com/marcinwerner/polskiwhisper.pl/issues - można pisać po polsku. Staramy się odpowiadać szybko.',
   },
 ] as const;

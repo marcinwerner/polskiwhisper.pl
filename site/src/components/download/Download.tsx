@@ -20,7 +20,7 @@ const PLATFORMS = {
     downloadLabel: "Pobierz .dmg (6 MB)",
     requirements: [
       "macOS 14 Sonoma lub nowszy",
-      "Apple Silicon (M1/M2/M3/M4) - Intel nie jest wspierany",
+      "Apple Silicon (M1/M2/M3/M4/M5) - na Intel Mac aplikacja jeszcze nie działa",
       "~2 GB wolnego miejsca",
       "Mikrofon",
     ],
@@ -67,7 +67,7 @@ export function Download() {
         <div className="text-center">
           <h2 className="text-3xl font-bold sm:text-4xl">Pobierz</h2>
           <p className="mx-auto mt-4 max-w-xl text-[var(--color-fg-muted)]">
-            Darmowa, na zawsze. Bez rejestracji, bez konta, bez subskrypcji.
+            Darmowa. Bez rejestracji. Bez konta. Bez subskrypcji.
           </p>
         </div>
 

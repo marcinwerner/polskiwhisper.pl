@@ -3,7 +3,7 @@
 ## Wymagania
 
 - **macOS 14 Sonoma** lub nowszy
-- **Apple Silicon** (M1/M2/M3/M4 - Intel nie jest wspierany)
+- **Apple Silicon** (M1/M2/M3/M4/M5 - na Intel Mac aplikacja jeszcze nie działa)
 - **8 GB RAM** minimum (16 GB dla komfortowej pracy z modelem AI)
 - **3 GB wolnego miejsca** na dysku (domyślny Whisper Turbo: ~1.5 GB + cache + audio)
 - **Mikrofon** (wbudowany lub zewnętrzny)

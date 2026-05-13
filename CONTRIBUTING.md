@@ -12,7 +12,7 @@ Najprostsza i najbardziej pomocna forma kontrybucji.
 2. Jeśli nie - utwórz nowy Issue używając template **"Zgłoś błąd"**
 3. Dołącz:
    - Wersję macOS (Apple → Informacje o tym Macu)
-   - Model Maca (M1/M2/M3/M4 + RAM)
+   - Model Maca (M1/M2/M3/M4/M5 + RAM)
    - Wersję PolskiWhisper (Settings → O programie)
    - Logi z Console.app (filtruj po `pl.polskiwhisper.app`)
    - Krok-po-kroku jak odtworzyć

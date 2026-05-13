@@ -33,7 +33,7 @@ Jeśli masz - wklej (drag & drop). Pomaga zrozumieć problem.
 ## Środowisko
 
 - **macOS**: [np. 14.5 Sonoma, 15.0 Sequoia]
-- **Mac**: [np. MacBook Pro M1 16GB, Mac mini M2 8GB]
+- **Mac**: [np. MacBook Pro M1 16GB, Mac mini M2 8GB, MacBook Air M5 16GB]
 - **Wersja PolskiWhisper**: [zobacz w "O programie"]
 - **Wersja Ollama** (jeśli używasz LLM): [`ollama --version`]
 - **Aktywny model Whisper**: [np. large-v3-turbo]
