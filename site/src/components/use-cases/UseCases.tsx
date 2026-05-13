@@ -132,16 +132,20 @@ type Phase =
   | "all-done" // both finished, comparison shown
   | "next-pending"; // brief rest before next case
 
+// Startujemy od "Każdy" (index 3, d1) - bo to najbardziej przystępny tekst dla pierwszego kontaktu.
+// Auto-cycle dalej w naturalnej kolejności: 3 → 0 → 1 → 2 → 3 → ...
+const INITIAL_CASE_INDEX = 3;
+
 export function UseCases() {
-  const [current, setCurrent] = useState(0);
+  const [current, setCurrent] = useState(INITIAL_CASE_INDEX);
   // visitCount[i] = ile razy case `i` zostało aktywowane. Tekst do pokazania = texts[(visit-1) % texts.length].
-  // Case 0 startuje z 1 (initial mount), reszta z 0.
+  // Initial case startuje z 1 (initial mount), reszta z 0.
   const [visitCount, setVisitCount] = useState<Record<number, number>>(() => {
     const init: Record<number, number> = {};
     CASES.forEach((_, i) => {
       init[i] = 0;
     });
-    init[0] = 1;
+    init[INITIAL_CASE_INDEX] = 1;
     return init;
   });
   const [isPaused, setIsPaused] = useState(false);
@@ -163,7 +167,7 @@ export function UseCases() {
   const phaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const visualizerRafRef = useRef<number>(0);
   // Ref synchronicznie trackuje ostatni cel advanceTo - dedup rapid clicks (np. dwa kliknięcia tabu zanim render się zakończy).
-  const lastAdvancedRef = useRef(0);
+  const lastAdvancedRef = useRef(INITIAL_CASE_INDEX);
 
   const advanceTo = useCallback((nextIndex: number) => {
     if (lastAdvancedRef.current === nextIndex) return; // no-op gdy ta sama kategoria
