@@ -730,7 +730,7 @@ function VoiceWindow({
           {formatTime(displayedTime)}
         </div>
       </div>
-      <div className="mt-4 flex-1 min-h-[180px] flex items-center justify-center">
+      <div className="mt-4 flex-1 min-h-[180px] flex flex-col">
         <AnimatePresence mode="wait">
           {/* Recording HUD pill - same style as WhisperDemo */}
           {isListening && (
@@ -740,7 +740,7 @@ function VoiceWindow({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.25 }}
-              className="flex items-center gap-3 rounded-full border border-accent/40 bg-[var(--color-bg-elevated)]/95 px-4 py-2 shadow-[0_0_24px_oklch(0.55_0.22_18/0.4)] backdrop-blur-md"
+              className="m-auto flex items-center gap-3 rounded-full border border-accent/40 bg-[var(--color-bg-elevated)]/95 px-4 py-2 shadow-[0_0_24px_oklch(0.55_0.22_18/0.4)] backdrop-blur-md"
             >
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
@@ -772,7 +772,7 @@ function VoiceWindow({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)]/95 px-4 py-2 text-xs font-medium text-[var(--color-fg-muted)] shadow-lg backdrop-blur-md"
+              className="m-auto flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)]/95 px-4 py-2 text-xs font-medium text-[var(--color-fg-muted)] shadow-lg backdrop-blur-md"
             >
               <span className="flex gap-1">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent [animation-delay:0ms]" />
