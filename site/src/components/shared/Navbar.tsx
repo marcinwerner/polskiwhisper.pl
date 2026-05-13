@@ -63,7 +63,7 @@ export function Navbar() {
         {/* Logo */}
         <a
           href="#"
-          className="flex items-center gap-2 text-lg font-bold transition-opacity hover:opacity-80"
+          className="text-lg font-bold transition-opacity hover:opacity-80"
           onClick={(e) => {
             e.preventDefault();
             window.scrollTo({ top: 0, behavior: "smooth" });
