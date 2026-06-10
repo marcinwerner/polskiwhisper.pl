@@ -258,6 +258,16 @@ final class DictationEngine {
         do {
             // 1. Whisper z Custom Words injection
             let pipelineStartedAt = Date()
+
+            // Pre-warming: gwarantuje że model jest w RAM tuż przed inference.
+            // Pod memory pressure (M1 16GB, Free <200 MB) strony modelu mogą być
+            // evicted między timer ticks → 30-85s decoding. Pre-warming dodaje ~0.5s
+            // ale eliminuje te spikes.
+            Log.dictation.info("pipeline-step0: pre-warming model in RAM")
+            let warmStartedAt = Date()
+            await whisperService.forceMemoryWarming()
+            Log.dictation.info("pipeline-step0-done: pre-warming \(Date().timeIntervalSince(warmStartedAt), privacy: .public)s")
+
             Log.dictation.info("pipeline-step1: generating initialPrompt")
             let initialPrompt = VocabularyProcessor.generateInitialPrompt()
             Log.dictation.info("pipeline-step1: calling Whisper.transcribe (prompt=\(initialPrompt?.count ?? 0, privacy: .public) chars)")

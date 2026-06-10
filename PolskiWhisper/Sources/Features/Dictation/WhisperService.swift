@@ -127,9 +127,10 @@ final class WhisperService {
     /// gdzie sam Whisper był 2.4s a reszta to page-in z disk).
     private var memoryWarmingTimer: DispatchSourceTimer?
 
-    /// Co ile sekund robić memory warming pass. 30s = balans między
-    /// "trzymaj model hot" a "nie obciążaj systemu nadmiernie".
-    private static let memoryWarmingIntervalSeconds: Int = 30
+    /// Co ile sekund robić memory warming pass. 10s = agresywny tryb dla M1 16GB
+    /// pod ciągłą presją RAM (zaobserwowane 2026-06-10: 30s interval pozwalał
+    /// stronom modelu zostać evicted między tickami → transkrypcje 35-85s).
+    private static let memoryWarmingIntervalSeconds: Int = 10
 
     // MARK: - Public API
 
@@ -539,6 +540,21 @@ final class WhisperService {
     // To NIE jest mlock (wymagałby Apple entitlements) - tylko soft hint +
     // ciągłe sygnalizowanie "te strony są w użyciu, nie evictuj".
 
+    /// Synchroniczny pre-warming pass - wywołać PRZED transkrypcją żeby zagwarantować
+    /// że model jest w aktywnym RAM (nie evicted do swap między timer ticks).
+    /// Dodaje ~0.5-1.5s do pipeline ale eliminuje 30-85s spikes pod memory pressure.
+    @MainActor
+    func forceMemoryWarming() async {
+        guard let model = loadedModel,
+              let folderURL = Self.modelDirectoryURL(for: model)
+        else { return }
+
+        // Wykonaj na background queue z high priority - blokuje await ale nie main thread.
+        await Task.detached(priority: .userInitiated) {
+            Self.applyMemoryHints(folderURL: folderURL, initial: false)
+        }.value
+    }
+
     /// Rozpoczyna memory warming dla modelu. Anuluje poprzedni timer jeśli istnieje.
     private func startMemoryWarming(for model: Model) {
         memoryWarmingTimer?.cancel()
@@ -574,7 +590,8 @@ final class WhisperService {
 
     /// Iteruje pliki w folderze modelu, mmap + madvise(WILLNEED) + touch each page.
     /// `initial=true` loguje rezultaty; w periodic ticks loguje tylko jeśli >100ms (anomalia).
-    private static func applyMemoryHints(folderURL: URL, initial: Bool) {
+    /// `nonisolated` żeby móc wywołać z background queue (Task.detached, DispatchSource).
+    nonisolated private static func applyMemoryHints(folderURL: URL, initial: Bool) {
         let start = Date()
         let fm = FileManager.default
 
@@ -618,15 +635,24 @@ final class WhisperService {
             // i traktował je jako "soon to be accessed".
             madvise(ptr, size, MADV_WILLNEED)
 
+            // madvise WILLNEED 2x dla wzmocnienia hintu (zaobserwowane: kernel czasem
+            // ignoruje pojedynczy hint pod heavy memory pressure).
+            madvise(ptr, size, MADV_WILLNEED)
+
             // Touchowanie pierwszego byte każdej strony (16 KB na Apple Silicon)
-            // żeby zwiększyć ich "active" reference count - macOS nie evictuje active pages first.
+            // + sumowanie do `volatile` var żeby kompilator nie zoptymalizował reads.
+            // Sum trzymamy jako side-effect żeby cały read pipeline szedł przez CPU/cache.
             let pageSize = 16384
             let typedPtr = ptr.assumingMemoryBound(to: UInt8.self)
+            var sink: UInt64 = 0  // accumulator - prevent dead-code elimination
             var offset = 0
             while offset < size {
-                _ = typedPtr[offset]  // read = touch
+                sink &+= UInt64(typedPtr[offset])  // read = touch + accumulate
                 offset += pageSize
             }
+            // Trick żeby kompilator NIE wyrzucił loop - logujemy sink wartość gdy <0
+            // (nigdy się nie zdarzy, ale dependency drzewo zostaje).
+            if sink == .max { Log.whisper.debug("warming sink saturation impossible") }
 
             totalBytes += Int64(size)
             filesTouched += 1
