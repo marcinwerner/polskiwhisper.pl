@@ -132,6 +132,20 @@ final class WhisperService {
     /// stronom modelu zostać evicted między tickami → transkrypcje 35-85s).
     private static let memoryWarmingIntervalSeconds: Int = 10
 
+    /// Co ile sekund robić full self-restart memory warming (cancel timer + re-mmap).
+    /// 4h = balans między "świeży mmap" (zapobiega long-term decay) a overhead.
+    /// Zaobserwowane 2026-06-15: po 5 dniach uptime memory warming "się zaciął"
+    /// (RSS spadł do 91 MB, pre-warm trwał 83s zamiast <1.5s).
+    private static let memoryWarmingSelfRestartSeconds: Int = 4 * 3600  // 4h
+
+    /// Ile sekund tickujący pass może maksymalnie trwać zanim uznamy że memory
+    /// warming "się zaciął" i triggerujemy self-restart. 5s = pages zostały
+    /// evicted do swap, page-in z disk trwa kilka sekund.
+    private static let memoryWarmingStuckThresholdSeconds: TimeInterval = 5.0
+
+    /// Timestamp ostatniego restartu warming - do triggera periodic self-restart.
+    private var memoryWarmingStartedAt: Date?
+
     // MARK: - Public API
 
     /// Ładuje model. Jeśli nie pobrany - pobiera z progress tracking.
@@ -559,6 +573,7 @@ final class WhisperService {
     private func startMemoryWarming(for model: Model) {
         memoryWarmingTimer?.cancel()
         memoryWarmingTimer = nil
+        memoryWarmingStartedAt = Date()
 
         guard let folderURL = Self.modelDirectoryURL(for: model) else {
             Log.whisper.warning("Memory warming: brak folderURL dla \(model.rawValue, privacy: .public)")
@@ -568,7 +583,14 @@ final class WhisperService {
         // Initial pre-warm + madvise hint - sygnał do macOS że strony będą potrzebne.
         Self.applyMemoryHints(folderURL: folderURL, initial: true)
 
-        // Periodic page-touching co 30s żeby strony nie zostały oznaczone jako inactive.
+        // Periodic page-touching co interval żeby strony nie zostały oznaczone jako inactive.
+        // **Watchdog**: jeśli pass trwa > stuck-threshold (5s), triggeruje self-restart
+        // bo to znaczy że memory warming przestał działać i strony są w swap.
+        // **Self-restart**: co 4h cancel timer + re-mmap, niezależnie od watchdog.
+        // Bez tego: zaobserwowane po 5 dniach uptime ze RSS spadł do 91 MB / 1.6 GB.
+        let restartThreshold = TimeInterval(Self.memoryWarmingSelfRestartSeconds)
+        let stuckThreshold = Self.memoryWarmingStuckThresholdSeconds
+
         let timer = DispatchSource.makeTimerSource(
             queue: DispatchQueue.global(qos: .background)
         )
@@ -576,16 +598,52 @@ final class WhisperService {
             deadline: .now() + .seconds(Self.memoryWarmingIntervalSeconds),
             repeating: .seconds(Self.memoryWarmingIntervalSeconds)
         )
-        timer.setEventHandler { [folderURL] in
+        timer.setEventHandler { [weak self, folderURL, model] in
+            let passStart = Date()
             Self.applyMemoryHints(folderURL: folderURL, initial: false)
+            let passDuration = Date().timeIntervalSince(passStart)
+
+            // Watchdog: pass > 5s = strony były w swap, restart warming aby resetować mmap.
+            if passDuration > stuckThreshold {
+                Log.whisper.warning("""
+                    Memory warming STUCK: pass took \(passDuration, privacy: .public)s \
+                    (> \(stuckThreshold, privacy: .public)s) - triggering self-restart
+                    """)
+                Task { @MainActor [weak self] in
+                    self?.startMemoryWarming(for: model)
+                }
+                return
+            }
+
+            // Periodic self-restart co 4h - zapobiega long-term decay (timer throttling,
+            // mmap region degradation pod chronic memory pressure).
+            if let started = self?.memoryWarmingStartedAtNonisolated(),
+               Date().timeIntervalSince(started) > restartThreshold {
+                Log.whisper.info("""
+                    Memory warming PERIODIC SELF-RESTART after \
+                    \(Date().timeIntervalSince(started) / 3600, privacy: .public)h
+                    """)
+                Task { @MainActor [weak self] in
+                    self?.startMemoryWarming(for: model)
+                }
+            }
         }
         timer.resume()
         memoryWarmingTimer = timer
 
         Log.whisper.info("""
             Memory warming aktywne dla \(model.rawValue, privacy: .public) - \
-            tick co \(Self.memoryWarmingIntervalSeconds, privacy: .public)s
+            tick co \(Self.memoryWarmingIntervalSeconds, privacy: .public)s, \
+            self-restart co \(Self.memoryWarmingSelfRestartSeconds / 3600, privacy: .public)h
             """)
+    }
+
+    /// Nonisolated getter dla memoryWarmingStartedAt - używany w timer event handler.
+    /// Date jest Sendable, więc safe read z background queue.
+    nonisolated private func memoryWarmingStartedAtNonisolated() -> Date? {
+        // unsafe read - Date jest Sendable, race condition akceptowalny (worst case:
+        // self-restart o 1 tick za późno, nie błąd).
+        return MainActor.assumeIsolated { memoryWarmingStartedAt }
     }
 
     /// Iteruje pliki w folderze modelu, mmap + madvise(WILLNEED) + touch each page.
