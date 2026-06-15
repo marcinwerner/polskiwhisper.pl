@@ -591,6 +591,11 @@ final class WhisperService {
         let restartThreshold = TimeInterval(Self.memoryWarmingSelfRestartSeconds)
         let stuckThreshold = Self.memoryWarmingStuckThresholdSeconds
 
+        // Capture started timestamp jako LOCAL IMMUTABLE w closure - bez MainActor access
+        // z background queue (poprzednia próba z MainActor.assumeIsolated CRASHOWAŁA -
+        // assumeIsolated jest assertion + crash gdy nie na MainActor; commit dcd99ec bug).
+        let startedAt = Date()
+
         let timer = DispatchSource.makeTimerSource(
             queue: DispatchQueue.global(qos: .background)
         )
@@ -598,7 +603,7 @@ final class WhisperService {
             deadline: .now() + .seconds(Self.memoryWarmingIntervalSeconds),
             repeating: .seconds(Self.memoryWarmingIntervalSeconds)
         )
-        timer.setEventHandler { [weak self, folderURL, model] in
+        timer.setEventHandler { [weak self, folderURL, model, startedAt] in
             let passStart = Date()
             Self.applyMemoryHints(folderURL: folderURL, initial: false)
             let passDuration = Date().timeIntervalSince(passStart)
@@ -617,11 +622,11 @@ final class WhisperService {
 
             // Periodic self-restart co 4h - zapobiega long-term decay (timer throttling,
             // mmap region degradation pod chronic memory pressure).
-            if let started = self?.memoryWarmingStartedAtNonisolated(),
-               Date().timeIntervalSince(started) > restartThreshold {
+            // `startedAt` captured w closure - immutable, brak MainActor access potrzebne.
+            if Date().timeIntervalSince(startedAt) > restartThreshold {
                 Log.whisper.info("""
                     Memory warming PERIODIC SELF-RESTART after \
-                    \(Date().timeIntervalSince(started) / 3600, privacy: .public)h
+                    \(Date().timeIntervalSince(startedAt) / 3600, privacy: .public)h
                     """)
                 Task { @MainActor [weak self] in
                     self?.startMemoryWarming(for: model)
@@ -636,14 +641,6 @@ final class WhisperService {
             tick co \(Self.memoryWarmingIntervalSeconds, privacy: .public)s, \
             self-restart co \(Self.memoryWarmingSelfRestartSeconds / 3600, privacy: .public)h
             """)
-    }
-
-    /// Nonisolated getter dla memoryWarmingStartedAt - używany w timer event handler.
-    /// Date jest Sendable, więc safe read z background queue.
-    nonisolated private func memoryWarmingStartedAtNonisolated() -> Date? {
-        // unsafe read - Date jest Sendable, race condition akceptowalny (worst case:
-        // self-restart o 1 tick za późno, nie błąd).
-        return MainActor.assumeIsolated { memoryWarmingStartedAt }
     }
 
     /// Iteruje pliki w folderze modelu, mmap + madvise(WILLNEED) + touch each page.
