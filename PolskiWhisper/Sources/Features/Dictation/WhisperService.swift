@@ -209,9 +209,26 @@ final class WhisperService {
             loadPhase = .loadingToRAM
             loadProgress = 1.0  // pasek pełny - spinner przejmuje rolę progress UI
 
+            // **Compute options: ANE-focused (jak SuperWhisper)**
+            // Default WhisperKit = `.all` (CPU + GPU + ANE) → konkurencja z WindowServer
+            // o GPU na M1 (unified memory + shared scheduler) = 18s decoding na 18s audio.
+            //
+            // ANE-only dla encoder/decoder + CPU dla mel/prefill = brak GPU contention,
+            // ANE dedykowany dla Whisper, GPU wolne dla UI compositor.
+            //
+            // Trade-off: marginalne speed loss gdy GPU wolne, ale **stabilność** pod
+            // typowym macOS workload (Safari, Claude, animacje okien).
+            let computeOptions = ModelComputeOptions(
+                melCompute: .cpuOnly,              // mel spectrogram = lekka operacja CPU
+                audioEncoderCompute: .cpuAndNeuralEngine,
+                textDecoderCompute: .cpuAndNeuralEngine,
+                prefillCompute: .cpuAndNeuralEngine
+            )
+
             let config = WhisperKitConfig(
                 model: model.rawValue,
                 modelFolder: modelFolderURL?.path,
+                computeOptions: computeOptions,
                 verbose: true,
                 logLevel: .info,
                 prewarm: true,
