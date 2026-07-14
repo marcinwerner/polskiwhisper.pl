@@ -2,24 +2,6 @@
 
 Format zgodny z [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) + [Semantic Versioning](https://semver.org/lang/pl/).
 
-> **Windows**: Wersja Windows ma osobny [CHANGELOG.md](windows/CHANGELOG.md) i własne tagi (`win-vX.Y.Z`). Numeracja niezależna - nie musi być zsynchronizowana z macOS.
-
-## [Windows v0.1.0-preview] - Pre-release Windows (2026-05-09)
-
-Pierwszy publiczny pre-release Windows - **placeholder UI**. Testowa wersja sprawdzająca czy aplikacja uruchamia się na Windows (nie ma jeszcze interaktywnego UI). Stack: **WinUI 3 + C# 12 + Whisper.net 1.5 + .NET 8 LTS**.
-
-**Pobierz** (no GitHub login): [PolskiWhisper-0.1.0-preview-win-x64.zip](https://github.com/marcinwerner/polskiwhisper.pl/releases/download/win-v0.1.0-preview/PolskiWhisper-0.1.0-preview-win-x64.zip) - 113 MB self-contained.
-
-**Co działa**: aplikacja uruchamia się i pokazuje okno z napisem "PolskiWhisper v0.1.0". Core library (logika biznesowa, vocabulary processor, hallucination filter) skompilowana i przetestowana xUnit. Audio recorder, hotkey monitor, Whisper.net wrapper, paste service - skompilowane (niesprawdzone runtime).
-
-**Co tymczasowo wyłączone**: 4 zakładki Settings, FloatingDictationWindow, OnboardingWizard, TrayIcon, Toast notifications, SoundService - 12 komponentów wyłączonych w `csproj` aż XamlCompiler issue zostanie zbadany lokalnie w Visual Studio 2022. Pełne UI w `v0.2.0`.
-
-Szczegóły: [windows/CHANGELOG.md](windows/CHANGELOG.md). Architektura: [windows/docs/ARCHITECTURE.md](windows/docs/ARCHITECTURE.md). Przewodnik dla testera: [windows/docs/SZYMON_TEST.md](windows/docs/SZYMON_TEST.md).
-
-## [Windows internal v0.1.0] - 2026-05-08 (NIE wydane publicznie)
-
-Wstępna implementacja Windows portu - pełen kod w folderze `windows/`. Niesprawdzony na CI ani lokalnie. Refaktoryzowany w `0.1.0-preview` po debugu CI.
-
 ## [0.1.5] - 2026-05-08
 
 Aktualizacje są teraz proste. Jeden klik pobiera i instaluje nową wersję, aplikacja sprząta po sobie, a opcjonalnie sama dba o świeżość bez Twojej ingerencji.

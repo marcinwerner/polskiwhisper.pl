@@ -76,10 +76,6 @@ keys/
 Models/
 WhisperModels/
 
-# Wyjątek: foldery Models/ w projekcie Windows (kod C#, nie pliki modeli AI)
-!windows/src/**/Models/
-!windows/src/**/Models/**
-
 # Build artifacts
 *.app
 *.dmg

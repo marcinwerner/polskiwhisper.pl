@@ -8,25 +8,25 @@
 
 ### Lokalizacja kodu - dwie opcje (decyzja Marcina, pytanie 7g w 01-BRIEF.md)
 
-**Opcja A - mono-repo (rekomendowane)**:
+**Opcja A - kod w tym repo (rekomendowane)**:
 - Lokalizacja: `polskiwhisper.pl/www/site/` (kod) + `polskiwhisper.pl/www/*.md` (brief)
 - Vercel: deploy z subdirectory `www/site`, Root Directory ustawiana w project settings
 - Git: ten sam repo co apka, jeden CHANGELOG, prostsze
-- CI: branch protection per path (np. zmiany w `www/**` triggerują landing build, `windows/**` triggerują Windows CI)
+- CI: branch protection per path (np. zmiany w `www/**` triggerują landing build)
 
-**Opcja B - multi-repo**:
+**Opcja B - osobny repo**:
 - Lokalizacja: osobny repo `polskiwhisper-landing` (nazwa wymaga akceptacji Marcina)
 - Vercel: standardowy deploy z root
 - Git: osobne historie, niezależne release cycle
 - CI: prostsze (single-purpose workflow)
 
-### Konwencja nazewnictwa (jeśli multi-repo)
+### Konwencja nazewnictwa (jeśli osobny repo)
 
 **Repo**: `polskiwhisper-landing` - **propozycja**, Marcin musi zaakceptować przed utworzeniem (per global rule "PYTAJ O ZGODĘ NA KLUCZOWE NAZWY").
 
 ### Inicjalizacja (warianty per opcja A/B)
 
-**Opcja A** (mono-repo, kod w `polskiwhisper.pl/www/site/`):
+**Opcja A** (kod w tym repo, `polskiwhisper.pl/www/site/`):
 
 ```bash
 # Z working dir = polskiwhisper.pl/
@@ -36,7 +36,7 @@ cd www/site
 # Reszta jak poniżej (npx create-next-app...)
 ```
 
-**Opcja B** (multi-repo, osobny `polskiwhisper-landing`):
+**Opcja B** (osobny repo `polskiwhisper-landing`):
 
 ```bash
 mkdir -p ~/Documents/GitHub/polskiwhisper-landing
@@ -489,7 +489,7 @@ export const metadata: Metadata = {
     default: "PolskiWhisper - dyktowanie po polsku offline",
     template: "%s | PolskiWhisper",
   },
-  description: "Darmowa, otwartoźródłowa aplikacja do dyktowania głosowego po polsku. Działa offline na macOS i Windows. Zero telemetrii, kod publiczny, MIT.",
+  description: "Darmowa, otwartoźródłowa aplikacja do dyktowania głosowego po polsku. Działa offline na macOS. Zero telemetrii, kod publiczny, MIT.",
   metadataBase: new URL("https://polskiwhisper.pl"),
   alternates: {
     canonical: "/",
@@ -522,7 +522,7 @@ const jsonLd = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   name: "PolskiWhisper",
-  operatingSystem: ["macOS", "Windows"],
+  operatingSystem: ["macOS"],
   applicationCategory: "ProductivityApplication",
   offers: {
     "@type": "Offer",

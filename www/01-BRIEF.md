@@ -11,9 +11,8 @@ PolskiWhisper to darmowa, otwartoźródłowa aplikacja do dyktowania głosowego 
 
 - **Repo apki**: https://github.com/marcinwerner/polskiwhisper.pl
 - **macOS**: v0.1.5+ stabilna, .dmg do pobrania z GitHub Releases
-- **Windows**: v0.1.0-preview pre-release, .zip 113 MB do pobrania (placeholder UI, pełne dyktowanie w v0.2.0)
 - **Filozofia**: "stabilny hobby project, nie premium polished" - bez telemetrii, bez phone-home, MIT, audytowalność kodu publicznego
-- **Stack apki**: WhisperKit (macOS) / Whisper.net (Windows), Apple Silicon ANE / DirectML GPU
+- **Stack apki**: WhisperKit, Apple Silicon ANE
 - **Funkcje**: hotkey toggle/hold, Esc cancel, auto-spacing po `.!?`, hallucination filter, find&replace słownik, 9 dźwięków, floating waveform window
 
 Pełną listę funkcji i historię releaseów znajdziesz w `02-CONTENT.md`.
@@ -107,9 +106,9 @@ Wybierz narzędzie do zadania, nie odwrotnie:
 ### 1. Hero
 
 - **Nagłówek 2-4 słowa, ogromny**: "Mówisz. Piszesz." (lub "Pisz głosem. Po polsku.")
-- **Sub-nagłówek 1 zdanie**: "Darmowa aplikacja do dyktowania w macOS i Windows. Działa offline. Twoje audio nigdy nie opuszcza komputera."
+- **Sub-nagłówek 1 zdanie**: "Darmowa aplikacja do dyktowania na macOS. Działa offline. Twoje audio nigdy nie opuszcza komputera."
 - **Live demo placeholder** z animowanymi waveformami + tekstem typewriter-stylem ("Po prostu mów po polsku, a tekst pojawi się tam gdzie kursor.")
-- **Dwa CTA**: **Pobierz dla macOS** | **Pobierz dla Windows (preview)**
+- **CTA**: **Pobierz dla macOS**
 - **Mała dolna linia**: "✓ MIT  ✓ Open source  ✓ Zero telemetrii"
 - **GitHub stars badge** (live, z Vercel KV cache)
 
@@ -135,7 +134,7 @@ Wybierz narzędzie do zadania, nie odwrotnie:
 
 ### 4. "Jak to działa" (3 kroki)
 
-- **Krok 1**: Pobierz aplikację (mac/win)
+- **Krok 1**: Pobierz aplikację na macOS
 - **Krok 2**: Pobierz model Whisper (1×, ~1.5 GB) - "po tym pełny offline"
 - **Krok 3**: Wciśnij hotkey i mów
 
@@ -164,10 +163,8 @@ Kontekst: na tle wycieków danych z chmurowych narzędzi, lokalność = killer f
 
 ### 7. Download (sticky / prominent)
 
-- **Tab macOS / Windows** (default macOS, bo bardziej dojrzała wersja)
 - **macOS**: bezpośredni link do .dmg z najnowszego release + verify SHA256
-- **Windows**: bezpośredni link do .zip (113 MB) + UWAGA pre-release v0.1.0-preview (placeholder UI)
-- **Wymagania systemowe** inline (macOS 14+ Apple Silicon / Windows 10 1809+)
+- **Wymagania systemowe** inline (macOS 14+ Apple Silicon)
 - **Quick start**: "co po pobraniu" (3 punkty)
 
 ### 8. Roadmap (timeline)
@@ -175,9 +172,7 @@ Kontekst: na tle wycieków danych z chmurowych narzędzi, lokalność = killer f
 Poziomy timeline z statusami:
 
 - v0.1.5 macOS ✅ (stable)
-- v0.1.0-preview Windows ✅ (placeholder UI)
-- v0.2.0 Windows 🔜 (full UI, dyktowanie)
-- v1.0.0 🎯 (parity, target Q3 2026)
+- v1.0.0 🎯 (target Q3 2026)
 
 ### 9. FAQ (accordion)
 
@@ -189,7 +184,7 @@ Most-asked (pełna treść w 02-CONTENT.md):
 - "Jakie języki?"
 - "GPU jest wymagane?"
 - "Mogę używać w pracy / komercyjnie?"
-- "Dlaczego nie ma w App Store / Microsoft Store?"
+- "Dlaczego nie ma w App Store?"
 - "Co jeśli znajdę bug?"
 
 ### 10. Community / contribution
@@ -238,7 +233,7 @@ Most-asked (pełna treść w 02-CONTENT.md):
 ### Roadmap timeline
 - Scroll-linked progress bar wypełnia się w miarę scrolla
 - Każdy milestone "wyskakuje" z animacją scale + opacity
-- Aktualny milestone (`v0.1.0-preview`) ma pulsing dot
+- Aktualny milestone (`v0.1.5`) ma pulsing dot
 
 ### Reduced motion
 - WSZYSTKIE animacje w `@media (prefers-reduced-motion: reduce)` redukują się do statycznych stanów
@@ -407,7 +402,7 @@ Sesja ma wyprodukować:
 - ✅ **Reduced motion**: cała strona użyteczna z `prefers-reduced-motion: reduce`
 - ✅ **Dark mode** + light mode obie pełne (nie tylko inverted colors)
 - ✅ **Print stylesheet** podstawowy (dla osób które chcą wydrukować)
-- ✅ **Real device testing**: macOS Safari, iOS Safari, Windows Chrome, Android Chrome - wszędzie OK
+- ✅ **Real device testing**: macOS Safari, iOS Safari, Chrome i Edge na desktopie, Android Chrome - wszędzie OK
 - ✅ **Lokalność**: GDPR-compliant, brak third-party cookies bez consent
 - ✅ **Open Graph**: każdy share na Twitter/LinkedIn/Discord pokazuje hero image z tekstem
 
@@ -438,9 +433,9 @@ Zacznij sesję od zadania tych 7 pytań i CZEKAJ na odpowiedzi PRZED kodowaniem:
 - **e)** **Newsletter / waitlist**: tak / nie?
 - **f)** **Affiliate w stopce**: "Made by Marcin Werner" + link do strony Marcina, czy bez personal branding?
 - **g)** **Lokalizacja kodu strony**:
-  - **g1)** Mono-repo: kod w `polskiwhisper.pl/www/site/` (Next.js root tego repo). Vercel deploy z subdirectory. Plus: jeden git, jeden CHANGELOG-tematyczny, all-in-one. Minus: mieszanie kontekstu macOS/Windows/web (CI build matrix robi się skomplikowane).
-  - **g2)** Multi-repo: osobny repo `polskiwhisper-landing` (pod kontem Marcina na GitHub). Plus: czysty podział odpowiedzialności, łatwiejsze zarządzanie release cyclami. Minus: dwa miejsca do utrzymania, dwa CI workflow.
-  - **Rekomendacja agenta**: g1 (mono-repo) - hobby project, jeden właściciel, prostsze. Vercel obsługuje deploy z subdir bez problemu. Ale to twoja decyzja, Marcin.
+  - **g1)** W tym repo: kod w `polskiwhisper.pl/www/site/` (Next.js root tego repo). Vercel deploy z subdirectory. Plus: jeden git, jeden CHANGELOG-tematyczny, all-in-one. Minus: kod strony web mieszka obok kodu aplikacji macOS.
+  - **g2)** Osobny repo: `polskiwhisper-landing` (pod kontem Marcina na GitHub). Plus: czysty podział odpowiedzialności, łatwiejsze zarządzanie release cyclami. Minus: dwa miejsca do utrzymania, dwa CI workflow.
+  - **Rekomendacja agenta**: g1 (kod w tym repo) - hobby project, jeden właściciel, prostsze. Vercel obsługuje deploy z subdir bez problemu. Ale to twoja decyzja, Marcin.
 
 ## Co działa "out of the box" w tym briefie
 

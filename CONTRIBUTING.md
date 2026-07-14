@@ -88,7 +88,7 @@ Wszystkie URLs muszą być **hardcoded** (nie z konfiguracji). Zmiana network be
 
 - **Telemetria** - nawet "anonimowa", zero. Aplikacja jest privacy-first by architecture.
 - **Cloud sync features** - lokalne narzędzie, świadoma decyzja.
-- **Multi-platform port** (iOS, Linux, Windows) - macOS native to focus, fork jeśli potrzebujesz.
+- **Multi-platform port** (iOS, Linux, inne systemy) - macOS native to focus, fork jeśli potrzebujesz.
 - **Chmurowe API AI** w stylu OpenAI / Anthropic - aplikacja jest w pełni offline by design.
 - **Subtle language changes** poza polski - aplikacja jest dedykowana polskiej społeczności.
 
