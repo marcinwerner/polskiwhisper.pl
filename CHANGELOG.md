@@ -2,6 +2,16 @@
 
 Format zgodny z [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) + [Semantic Versioning](https://semver.org/lang/pl/).
 
+## [Unreleased] - usprawnienia wydajności
+
+Dopracowanie płynności transkrypcji na Apple Silicon. Zmiany są na `main`, jeszcze bez osobnego wydania.
+
+### Usprawnienia
+
+- **Szybsza i stabilniejsza transkrypcja** - model Whisper jest teraz utrzymywany "ciepły" w pamięci, dzięki czemu dyktowanie odpowiada od razu, nawet gdy komputer jest obciążony innymi aplikacjami. Wcześniej przy dużym zużyciu pamięci pierwsze słowa potrafiły pojawić się z opóźnieniem.
+- **Lepsze wykorzystanie Apple Neural Engine** - transkrypcja korzysta z dedykowanego układu ANE zamiast rywalizować o GPU z resztą systemu. Efekt: bardziej przewidywalny, krótki czas rozpoznawania.
+- **Samoczynne odświeżanie w tle** - aplikacja dba o utrzymanie modelu w pamięci również podczas długiej pracy bez restartu.
+
 ## [0.1.5] - 2026-05-08
 
 Aktualizacje są teraz proste. Jeden klik pobiera i instaluje nową wersję, aplikacja sprząta po sobie, a opcjonalnie sama dba o świeżość bez Twojej ingerencji.
